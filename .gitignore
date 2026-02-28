@@ -1,0 +1,17 @@
+# NetBeans private settings
+/nbproject/private/
+
+# Ant build output
+/build/
+/dist/
+/nbbuild/
+/nbdist/
+
+# Java
+*.class
+*.log
+hs_err_pid*
+
+# OS junk
+.DS_Store
+Thumbs.db
