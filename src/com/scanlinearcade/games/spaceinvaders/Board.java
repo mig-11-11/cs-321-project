@@ -21,6 +21,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * handles operations of the game, displays game for user
+ * @author RayCa
+ */
 public class Board extends JPanel {
 
     private Dimension d;
@@ -38,7 +42,7 @@ public class Board extends JPanel {
     private Timer timer;
 
     /**
-     * runs board
+     * runs board and sets game components on board
      */
     public Board() {
 
@@ -46,6 +50,9 @@ public class Board extends JPanel {
         gameInit();
     }
 
+    /**
+     * sets template for board
+     */
     private void initBoard() {
 
         addKeyListener(new TAdapter());
@@ -60,6 +67,9 @@ public class Board extends JPanel {
     }
 
 
+    /**
+     * sets board for player and aliens
+     */
     private void gameInit() {
 
         aliens = new ArrayList<>();
@@ -77,6 +87,10 @@ public class Board extends JPanel {
         shot = new Shot();
     }
 
+    /**
+     * displays aliens on screen
+     * @param g 
+     */
     private void drawAliens(Graphics g) {
 
         for (Alien alien : aliens) {
@@ -93,6 +107,10 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * displays player onscreen
+     * @param g 
+     */
     private void drawPlayer(Graphics g) {
 
         if (player.isVisible()) {
@@ -107,6 +125,10 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * displays graphics for shot from player
+     * @param g 
+     */
     private void drawShot(Graphics g) {
 
         if (shot.isVisible()) {
@@ -115,6 +137,10 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * displays bomb graphics from enemies/aliens
+     * @param g 
+     */
     private void drawBombing(Graphics g) {
 
         for (Alien a : aliens) {
@@ -135,6 +161,10 @@ public class Board extends JPanel {
         doDrawing(g);
     }
 
+    /**
+     * 
+     * @param g 
+     */
     private void doDrawing(Graphics g) {
 
         g.setColor(Color.black);
@@ -163,6 +193,10 @@ public class Board extends JPanel {
         Toolkit.getDefaultToolkit().sync();
     }
 
+    /**
+     * displays the game over screen when player loses
+     * @param g 
+     */
     private void gameOver(Graphics g) {
 
         g.setColor(Color.black);
@@ -182,6 +216,9 @@ public class Board extends JPanel {
                 Commons.BOARD_WIDTH / 2);
     }
 
+    /**
+     * updates the board for enemies, player, and shots
+     */
     private void update() {
 
         if (deaths == Commons.NUMBER_OF_ALIENS_TO_DESTROY) {
@@ -328,12 +365,18 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * 
+     */
     private void doGameCycle() {
 
         update();
         repaint();
     }
 
+    /**
+     * 
+     */
     private class GameCycle implements ActionListener {
 
         @Override
@@ -343,8 +386,12 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * 
+     */
     private class TAdapter extends KeyAdapter {
 
+        
         @Override
         public void keyReleased(KeyEvent e) {
 
