@@ -6,7 +6,8 @@
 package com.scanlinearcade.app;
 
 import javax.swing.JFrame;
-import com.scanlinearcade.games.breakout.BreakPanel;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
 /**
  *
  * @author Braden
@@ -20,7 +21,8 @@ public class ArcadeFrame extends JFrame
         setLocationRelativeTo(null);
         setResizable(false);
 
-        add(new BreakPanel());
+        
+        add(new JLabel("Scanline Arcade - Hub loading...", SwingConstants.CENTER));
     }
 }
 
