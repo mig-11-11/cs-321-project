@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.scanlinearcade.app"},{"l":"com.scanlinearcade.games.breakout"},{"l":"com.scanlinearcade.games.snake"},{"l":"com.scanlinearcade.games.spaceinvaders"}];updateSearchResults();
