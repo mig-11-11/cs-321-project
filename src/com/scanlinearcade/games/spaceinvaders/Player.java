@@ -9,11 +9,17 @@ public class Player extends Sprite {
 
     private int width;
 
+    /**
+     * runs initPlayer()
+     */
     public Player() {
 
         initPlayer();
     }
 
+    /**
+     * sets coordinates and image for player
+     */
     private void initPlayer() {
 
         var playerImg = "src/com/scanlinearcade/games/images/player.png";
@@ -29,6 +35,9 @@ public class Player extends Sprite {
         setY(START_Y);
     }
 
+    /**
+     * moves player
+     */
     public void act() {
 
         x += dx;
@@ -44,6 +53,10 @@ public class Player extends Sprite {
         }
     }
 
+    /**
+     * tracks inputs from user
+     * @param e 
+     */
     public void keyPressed(KeyEvent e) {
 
         int key = e.getKeyCode();
@@ -59,6 +72,10 @@ public class Player extends Sprite {
         }
     }
 
+    /**
+     * tracks inputs from user
+     * @param e 
+     */
     public void keyReleased(KeyEvent e) {
 
         int key = e.getKeyCode();

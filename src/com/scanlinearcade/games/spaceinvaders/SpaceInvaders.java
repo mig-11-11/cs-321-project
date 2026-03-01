@@ -13,11 +13,17 @@ import javax.swing.JFrame;
  */
 public class SpaceInvaders extends JFrame  {
 
+    /**
+     * runs initUI
+     */
     public SpaceInvaders() {
 
         initUI();
     }
 
+    /**
+     * sets board and runs game for user
+     */
     private void initUI() {
 
         add(new Board());
@@ -30,6 +36,10 @@ public class SpaceInvaders extends JFrame  {
         setLocationRelativeTo(null);
     }
 
+    /**
+     * 
+     * @param args 
+     */
     public static void main(String[] args) {
 
         EventQueue.invokeLater(() -> {

@@ -1,5 +1,9 @@
 package com.scanlinearcade.games.spaceinvaders;
 
+/**
+ * holds the constant values to be used by other classes
+ * @author RayCa
+ */
 public interface Commons {
 
     int BOARD_WIDTH = 358;
