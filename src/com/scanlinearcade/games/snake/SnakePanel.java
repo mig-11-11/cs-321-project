@@ -226,5 +226,35 @@ public class SnakePanel extends JPanel {
         int y = rect.y + (rect.height - fm.getHeight()) / 2 + fm.getAscent();
         g2.drawString(text, x, y);
     }
+    
+   
+    
+    
+   
+        public void startGameLoop()
+    {
+        if (!timer.isRunning())
+        {
+            timer.start();
+        }
+        requestFocusInWindow();
+    }
+
+    public void stopGameLoop()
+    {
+        if (timer.isRunning())
+        {
+            timer.stop();
+        }
+    }
+
+    public void resetGame()
+    {
+        model.reset();
+        repaint();
+    }
+    
 }
+
+
 
