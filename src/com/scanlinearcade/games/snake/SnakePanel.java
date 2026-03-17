@@ -21,15 +21,45 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+/**
+ * Swing UI panel for the Snake game. This class serves as the primary View/Controller
+ * for the Snake module:
+ *
+ * <ul>
+ *   <li><b>View:</b> Renders the grid, snake, food, HUD text, and game-over overlay.</li>
+ *   <li><b>Controller:</b> Captures keyboard input (WASD/Arrow keys, Space, R) and
+ *       forwards intent to the {@link SnakeModel}.</li>
+ *   <li><b>Session loop:</b> Uses a Swing {@link Timer} to advance the game at a fixed rate.</li>
+ * </ul>
+ *
+ * <p><b>Design contract:</b> Core game rules and state updates belong in {@link SnakeModel}.
+ * This panel should only trigger updates (via {@code model.step()}) and render the model state.</p>
+ *
+ * <h2>API Outline (public/protected)</h2>
+ * <pre>
+ * public SnakePanel()
+ * public Dimension getPreferredSize()
+ * protected void paintComponent(Graphics g)
+ * </pre>
+ *
+ * <h2>Internal Helpers (package-private/private)</h2>
+ * <pre>
+ * private void togglePause()
+ * private static void drawCentered(Graphics2D g2, String text, Rectangle rect)
+ * </pre>
+ */
 public class SnakePanel extends JPanel {
 
-    // UI sizing (tweak as you want)
+    /** Pixels per grid cell. */
     private static final int CELL = 24;     // pixels per grid cell
     private static final int COLS = 25;     // grid width
     private static final int ROWS = 20;     // grid height
     private static final int FPS_MS = 120;  // lower = faster
-
+    
+    /** Domain model containing all Snake state and game rules. */
     private final SnakeModel model = new SnakeModel(COLS, ROWS);
+    
+    /** Swing timer driving the update loop */
     private final Timer timer;
     private final Runnable returnToHubAction;
     private boolean gameOverDialogShown;
@@ -45,20 +75,22 @@ public class SnakePanel extends JPanel {
         this.returnToHubAction = returnToHubAction;
         this.currentRunToken = UUID.randomUUID().toString();
 
-        // Game loop
-        timer = new Timer(FPS_MS, e -> 
+        // Game loop, updates the model then repaints the panel
+        Timer createdTimer = new Timer(FPS_MS, null);
+        createdTimer.addActionListener(e -> 
         {
             model.step();
             if (model.isGameOver() && !gameOverDialogShown) {
                 gameOverDialogShown = true;
-                timer.stop();
+                createdTimer.stop();
                 SwingUtilities.invokeLater(this::showSharedGameOverMenu);
             }
             repaint();
         });
+        timer = createdTimer;
         timer.start();
 
-        // Keyboard input
+        // Keyboard input tp mopel actions
         addKeyListener(new KeyAdapter() 
         {
             @Override
@@ -135,6 +167,28 @@ public class SnakePanel extends JPanel {
         repaint();
     }
 
+  
+    /**
+     * Renders the Snake game based on the current {@link SnakeModel} state.
+     *
+     * <p>This method draws:</p>
+     * <ul>
+     *   <li>board background and optional grid</li>
+     *   <li>food location</li>
+     *   <li>snake body and head</li>
+     *   <li>HUD text (score + controls)</li>
+     *   <li>game-over overlay when applicable</li>
+     * </ul>
+     *
+     * <p><b>Design contract:</b> No game rules should be executed here. Rendering
+     * is derived from model getters only.</p>
+     *
+     * <pre>
+     * protected void paintComponent(Graphics g)
+     * </pre>
+     *
+     * @param g the Swing graphics context for this component
+     */
     @Override
     protected void paintComponent(Graphics g) 
     {
@@ -196,11 +250,52 @@ public class SnakePanel extends JPanel {
         g2.dispose();
     }
 
+    /**
+     * Draws a string centered inside the given rectangle using the current font.
+     *
+     * <pre>
+     * private static void drawCentered(Graphics2D g2, String text, Rectangle rect)
+     * </pre>
+     *
+     * @param g2 graphics context used to render text
+     * @param text text to draw
+     * @param rect rectangle to center the text within
+     */
     private static void drawCentered(Graphics2D g2, String text, Rectangle rect) {
         FontMetrics fm = g2.getFontMetrics();
         int x = rect.x + (rect.width - fm.stringWidth(text)) / 2;
         int y = rect.y + (rect.height - fm.getHeight()) / 2 + fm.getAscent();
         g2.drawString(text, x, y);
     }
+    
+   
+    
+    
+   
+        public void startGameLoop()
+    {
+        if (!timer.isRunning())
+        {
+            timer.start();
+        }
+        requestFocusInWindow();
+    }
+
+    public void stopGameLoop()
+    {
+        if (timer.isRunning())
+        {
+            timer.stop();
+        }
+    }
+
+    public void resetGame()
+    {
+        model.reset();
+        repaint();
+    }
+    
 }
+
+
 

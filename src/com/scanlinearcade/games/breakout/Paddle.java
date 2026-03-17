@@ -50,7 +50,7 @@ public class Paddle {
 		this.y = startY;
 		this.width = width;
 		this.height = height;
-		this.speed = 6;
+		this.speed = 10;
 	}
 
 	/**

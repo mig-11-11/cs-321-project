@@ -9,17 +9,22 @@
 //*****************************************************************************************************
 package com.scanlinearcade.games.breakout;
 
+import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.UUID;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 /**
@@ -33,7 +38,6 @@ import javax.swing.Timer;
  * <ul>
  *   <li>{@code public BreakPanel()}</li>
  *   <li>{@code public void actionPerformed(ActionEvent e)}</li>
- *   <li>{@code public void keyTyped(KeyEvent e)}</li>
  *   <li>{@code public void keyPressed(KeyEvent e)}</li>
  *   <li>{@code public void keyReleased(KeyEvent e)}</li>
  * </ul>
@@ -49,7 +53,7 @@ import javax.swing.Timer;
  * </ul>
  *
  * Goals:
- * - Add pausing functionality (variable isPaused), and a pause menu with options to resume, restart, or quit to main menu
+ * - Add pausing functionality (variable isPaused)
  */
 public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	public static final int PANEL_WIDTH = 800;
@@ -63,21 +67,29 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	private boolean running;
 	private boolean leftPressed;
 	private boolean rightPressed;
+	private boolean paused;
+	private boolean gameOverDialogShown;
+	private final Runnable returnToHubAction;
+	private int clearedBoards;
+	private String currentRunToken;
 
 	/**
 	 * Creates the panel, initializes game state, and starts the update timer.
 	 * Signature: {@code public BreakPanel()}
 	 */
 	public BreakPanel() {
+		this(null);
+	}
+
+	public BreakPanel(Runnable returnToHubAction) {
 		setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
 		setBackground(Color.BLACK);
 		setFocusable(true);
 		addKeyListener(this);
-
-		initGame();
+		this.returnToHubAction = returnToHubAction;
 
 		timer = new Timer(16, this);
-		timer.start();
+		initGame();
 	}
 
 	/**
@@ -86,9 +98,20 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 */
 	private void initGame() {
 		score = new BreakoutScore(3);
-		bricks = new Bricks(5, 10, PANEL_WIDTH, 60);
+		clearedBoards = 0;
+		currentRunToken = UUID.randomUUID().toString();
+		spawnFreshBoard();
 		resetRound();
 		running = true;
+		paused = false;
+		gameOverDialogShown = false;
+		if (timer != null && !timer.isRunning()) {
+			timer.start();
+		}
+	}
+
+	private void spawnFreshBoard() {
+		bricks = new Bricks(5, 10, PANEL_WIDTH, 60);
 	}
 
 	/**
@@ -97,7 +120,18 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 */
 	private void resetRound() {
 		paddle = new Paddle(PANEL_WIDTH / 2 - 45, PANEL_HEIGHT - 40, 90, 12);
-		ball = new Ball(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, 8);
+		if (ball == null) {
+			ball = new Ball(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, 8);
+			return;
+		}
+		ball.reset(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, false);
+	}
+
+	private void advanceToNextBoard() {
+		clearedBoards++;
+		spawnFreshBoard();
+		ball.increaseLevelSpeed();
+		resetRound();
 	}
 
 	/**
@@ -108,7 +142,7 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (running) {
+		if (running && !paused) {
 			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
 			paddle.update(leftPressed, rightPressed, bounds);
 
@@ -122,11 +156,60 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 				}
 			}
 
-			if (bricks.isCleared()) {
-				running = false;
+			if (running && bricks.isCleared()) {
+				advanceToNextBoard();
+			}
+
+			if (!running && !gameOverDialogShown) {
+				gameOverDialogShown = true;
+				timer.stop();
+				boolean won = bricks.isCleared();
+				SwingUtilities.invokeLater(() -> showSharedGameOverMenu(won));
 			}
 		}
 		repaint();
+	}
+
+	private void showSharedGameOverMenu(boolean won) {
+		String resultText = won ? "You Win!" : "Game Over";
+		GameOverDialog.showDialog(
+				this,
+				"breakout",
+				currentRunToken,
+				resultText,
+				score.getScore(),
+				this::restartFromDialog,
+				this::returnToHubFromDialog
+		);
+	}
+
+	private void restartFromDialog() {
+		initGame();
+		requestFocusInWindow();
+		repaint();
+	}
+
+	private void returnToHubFromDialog() {
+		if (returnToHubAction != null) {
+			returnToHubAction.run();
+			return;
+		}
+
+		Window window = SwingUtilities.getWindowAncestor(this);
+		new ArcadeFrame().setVisible(true);
+		if (window != null) {
+			window.dispose();
+		}
+	}
+
+	public void endGame() {
+		running = false;
+		paused = false;
+		leftPressed = false;
+		rightPressed = false;
+		if (timer != null && timer.isRunning()) {
+			timer.stop();
+		}
 	}
 
 	/**
@@ -146,9 +229,10 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 		score.draw(g2, PANEL_WIDTH);
 
 		if (!running) {
-			String message = bricks.isCleared() ? "You Win!" : "Game Over";
-			drawCenteredText(g2, message, PANEL_HEIGHT / 2 - 10, 28);
-			drawCenteredText(g2, "Press Space to Restart", PANEL_HEIGHT / 2 + 20, 16);
+			drawCenteredText(g2, "Game Over", PANEL_HEIGHT / 2 - 10, 28);
+		} else if (paused) {
+			drawCenteredText(g2, "Paused", PANEL_HEIGHT / 2 - 10, 28);
+			drawCenteredText(g2, "Press [Space] to Resume", PANEL_HEIGHT / 2 + 20, 16);
 		}
 	}
 
@@ -187,12 +271,24 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 */
 	@Override
 	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+		if (e.getKeyCode() == KeyEvent.VK_SPACE && running) {
+			paused = !paused;
+			if (paused) {
+				leftPressed = false;
+				rightPressed = false;
+			}
+			repaint();
+			return;
+		}
+
+		if (paused) {
+			return;
+		}
+
+		if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			leftPressed = true;
-		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			rightPressed = true;
-		} else if (e.getKeyCode() == KeyEvent.VK_SPACE && !running) {
-			initGame();
 		}
 	}
 
@@ -204,9 +300,9 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 */
 	@Override
 	public void keyReleased(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+		if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			leftPressed = false;
-		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			rightPressed = false;
 		}
 	}

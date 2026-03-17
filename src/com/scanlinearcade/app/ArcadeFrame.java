@@ -1,149 +1,180 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-
 package com.scanlinearcade.app;
 
-import com.scanlinearcade.games.breakout.BreakPanel;
+import com.scanlinearcade.games.snake.SnakePanel;
 import java.awt.BorderLayout;
-import java.awt.CardLayout;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-/**
- *
- * @author Braden
- */
+import java.awt.CardLayout;
+
+
 public class ArcadeFrame extends JFrame
 {
     private static final String MENU_CARD = "menu";
+    private static final String SNAKE_CARD = "snake";
     private static final String BREAKOUT_CARD = "breakout";
+    private static final String INVADERS_CARD = "invaders";
 
-    private final CardLayout cardLayout;
-    private final JPanel cards;
-    private JPanel breakoutHost;
-    private BreakPanel breakoutPanel;
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel cards = new JPanel(cardLayout);
+    private final SnakePanel snakePanel = new SnakePanel();
 
+    
     public ArcadeFrame()
     {
         setTitle("Scanline Arcade");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 700);
-        setLocationRelativeTo(null);
-        setResizable(false);
+        setResizable(true);
 
-        cardLayout = new CardLayout();
-        cards = new JPanel(cardLayout);
-        cards.add(createMenuPanel(), MENU_CARD);
-        cards.add(createBreakoutContainer(), BREAKOUT_CARD);
+        MenuPanel menuPanel = new MenuPanel(
+            this::showSnake,
+            this::showBreakout,
+            this::showInvaders
+        );
+
+        JPanel snakeScreen = createGameScreen(
+            "Snake",
+            snakePanel,
+            () ->
+            {
+                snakePanel.stopGameLoop();
+                snakePanel.resetGame();
+                showMenu();
+            }
+        );
+
+        JPanel breakoutScreen = createGameScreen(
+            "Breakout",
+            createPlaceholderPanel("Breakout", "Breakout will be plugged in here."),
+            this::showMenu
+        );
+
+        JPanel invadersScreen = createGameScreen(
+            "Space Invaders",
+            createPlaceholderPanel("Space Invaders", "Space Invaders will be plugged in here."),
+            this::showMenu
+        );
+
+        cards.add(menuPanel, MENU_CARD);
+        cards.add(snakeScreen, SNAKE_CARD);
+        cards.add(breakoutScreen, BREAKOUT_CARD);
+        cards.add(invadersScreen, INVADERS_CARD);
 
         setContentPane(cards);
+        pack();
+        setLocationRelativeTo(null);
+
+        // Prevent Snake from running in the background while on the hub menu
+        snakePanel.stopGameLoop();
+
         showMenu();
     }
 
-    private JPanel createMenuPanel()
+    private JPanel createGameScreen(String title, JComponent content, Runnable onReturn)
     {
-        JPanel menu = new JPanel(new BorderLayout());
-        menu.setBackground(Color.BLACK);
+        JPanel screen = new JPanel(new BorderLayout());
+        screen.setBackground(Color.BLACK);
 
-        JLabel title = new JLabel("Scanline Arcade", SwingConstants.CENTER);
-        title.setForeground(Color.WHITE);
-        title.setFont(new Font("SansSerif", Font.BOLD, 44));
-        title.setBorder(BorderFactory.createEmptyBorder(60, 20, 10, 20));
+        JPanel topBar = new JPanel(new BorderLayout());
+        topBar.setBackground(new Color(15, 15, 25));
+        topBar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JLabel subtitle = new JLabel("Main Menu", SwingConstants.CENTER);
-        subtitle.setForeground(new Color(190, 190, 190));
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        subtitle.setBorder(BorderFactory.createEmptyBorder(0, 20, 30, 20));
+        JButton returnButton = new JButton("Return to Hub");
+        returnButton.setFocusable(false);
+        returnButton.setBackground(Color.BLACK);
+        returnButton.setForeground(new Color(255, 220, 80));
+        returnButton.setBorder(BorderFactory.createLineBorder(new Color(255, 220, 80), 2));
+        returnButton.addActionListener(e -> onReturn.run());
 
-        JPanel top = new JPanel(new BorderLayout());
-        top.setOpaque(false);
-        top.add(title, BorderLayout.CENTER);
-        top.add(subtitle, BorderLayout.SOUTH);
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setForeground(new Color(0, 255, 200));
+        titleLabel.setFont(new Font("Monospaced", Font.BOLD, 24));
 
-        JButton breakoutButton = new JButton("Play Breakout");
-        breakoutButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        breakoutButton.setPreferredSize(new Dimension(220, 44));
-        breakoutButton.addActionListener(e -> showBreakout());
+        topBar.add(returnButton, BorderLayout.WEST);
+        topBar.add(titleLabel, BorderLayout.CENTER);
 
-        JButton exitButton = new JButton("Exit");
-        exitButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        exitButton.setPreferredSize(new Dimension(220, 44));
-        exitButton.addActionListener(e -> dispose());
+        JPanel centerWrapper = new JPanel(new BorderLayout());
+        centerWrapper.setBackground(Color.BLACK);
+        centerWrapper.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        centerWrapper.add(content, BorderLayout.CENTER);
 
-        JPanel buttonColumn = new JPanel();
-        buttonColumn.setOpaque(false);
-        buttonColumn.setLayout(new BoxLayout(buttonColumn, BoxLayout.Y_AXIS));
-        buttonColumn.add(Box.createVerticalGlue());
-        buttonColumn.add(breakoutButton);
-        buttonColumn.add(Box.createRigidArea(new Dimension(0, 16)));
-        buttonColumn.add(exitButton);
-        buttonColumn.add(Box.createVerticalGlue());
+        screen.add(topBar, BorderLayout.NORTH);
+        screen.add(centerWrapper, BorderLayout.CENTER);
 
-        menu.add(top, BorderLayout.NORTH);
-        menu.add(buttonColumn, BorderLayout.CENTER);
-        return menu;
+        bindEscapeToReturn(screen, onReturn);
+
+        return screen;
     }
 
-    private JPanel createBreakoutContainer()
+    private JPanel createPlaceholderPanel(String gameName, String message)
     {
-        JPanel breakoutCard = new JPanel(new BorderLayout());
-        breakoutCard.setBackground(Color.DARK_GRAY);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(18, 18, 30));
+        panel.setBorder(BorderFactory.createLineBorder(new Color(0, 255, 200), 3));
 
-        JButton backButton = new JButton("Back to Menu");
-        backButton.addActionListener(e -> endBreakoutSessionAndShowMenu());
+        JLabel label = new JLabel(
+            "<html><div style='text-align:center;'>" +
+            "<h1 style='color:#00FFC8; font-family:monospace;'>" + gameName + "</h1>" +
+            "<p style='color:white; font-family:monospace;'>" + message + "</p>" +
+            "</div></html>",
+            SwingConstants.CENTER
+        );
 
-        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        header.add(backButton);
-
-        breakoutHost = new JPanel(new GridBagLayout());
-        breakoutHost.setBackground(Color.DARK_GRAY);
-
-        breakoutCard.add(header, BorderLayout.NORTH);
-        breakoutCard.add(breakoutHost, BorderLayout.CENTER);
-        return breakoutCard;
+        panel.add(label, BorderLayout.CENTER);
+        return panel;
     }
 
-    public void showMenu()
+    private void bindEscapeToReturn(JComponent component, Runnable onReturn)
+    {
+        component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+            KeyStroke.getKeyStroke("ESCAPE"),
+            "returnToMenu"
+        );
+
+        component.getActionMap().put(
+            "returnToMenu",
+            new AbstractAction()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    onReturn.run();
+                }
+            }
+        );
+    }
+
+    private void showMenu()
     {
         cardLayout.show(cards, MENU_CARD);
+        repaint();
     }
 
-    private void endBreakoutSessionAndShowMenu()
+    private void showSnake()
     {
-        if (breakoutPanel != null) {
-            breakoutPanel.endGame();
-        }
-        breakoutHost.removeAll();
-        breakoutHost.revalidate();
-        breakoutHost.repaint();
-        breakoutPanel = null;
-        showMenu();
+        
+        cardLayout.show(cards, SNAKE_CARD);
+        snakePanel.resetGame();
+        snakePanel.startGameLoop();
+        snakePanel.requestFocusInWindow();
     }
 
     private void showBreakout()
     {
-        breakoutHost.removeAll();
-        breakoutPanel = new BreakPanel(this::endBreakoutSessionAndShowMenu);
-        breakoutHost.add(breakoutPanel);
-        breakoutHost.revalidate();
-        breakoutHost.repaint();
-
         cardLayout.show(cards, BREAKOUT_CARD);
-        SwingUtilities.invokeLater(() -> breakoutPanel.requestFocusInWindow());
+    }
+
+    private void showInvaders()
+    {
+        cardLayout.show(cards, INVADERS_CARD);
     }
 }
-
