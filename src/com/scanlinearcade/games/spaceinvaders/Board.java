@@ -1,5 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
+import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 //import com.zetcode.sprite.Alien;
 //import com.zetcode.sprite.Player;
 //import com.zetcode.sprite.Shot;
@@ -12,6 +14,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -20,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
+import javax.swing.SwingUtilities;
 
 public class Board extends JPanel {
 
@@ -36,11 +41,20 @@ public class Board extends JPanel {
     private String message = "Game Over";
 
     private Timer timer;
+    private final Runnable returnToHubAction;
+    private boolean gameOverDialogShown;
+    private String currentRunToken;
 
     /**
      * runs board
      */
     public Board() {
+        this(null);
+    }
+
+    public Board(Runnable returnToHubAction) {
+
+        this.returnToHubAction = returnToHubAction;
 
         initBoard();
         gameInit();
@@ -75,6 +89,12 @@ public class Board extends JPanel {
 
         player = new Player();
         shot = new Shot();
+        deaths = 0;
+        direction = -1;
+        inGame = true;
+        message = "Game Over";
+        gameOverDialogShown = false;
+        currentRunToken = UUID.randomUUID().toString();
     }
 
     private void drawAliens(Graphics g) {
@@ -155,6 +175,11 @@ public class Board extends JPanel {
 
             if (timer.isRunning()) {
                 timer.stop();
+            }
+
+            if (!gameOverDialogShown) {
+                gameOverDialogShown = true;
+                SwingUtilities.invokeLater(this::showSharedGameOverMenu);
             }
 
             gameOver(g);
@@ -332,6 +357,40 @@ public class Board extends JPanel {
 
         update();
         repaint();
+    }
+
+    private void showSharedGameOverMenu() {
+        GameOverDialog.showDialog(
+                this,
+                "spaceinvaders",
+            currentRunToken,
+                message,
+                deaths * 10,
+                this::restartFromDialog,
+                this::returnToHubFromDialog
+        );
+    }
+
+    private void restartFromDialog() {
+        gameInit();
+        if (!timer.isRunning()) {
+            timer.start();
+        }
+        requestFocusInWindow();
+        repaint();
+    }
+
+    private void returnToHubFromDialog() {
+        if (returnToHubAction != null) {
+            returnToHubAction.run();
+            return;
+        }
+
+        Window window = SwingUtilities.getWindowAncestor(this);
+        new ArcadeFrame().setVisible(true);
+        if (window != null) {
+            window.dispose();
+        }
     }
 
     private class GameCycle implements ActionListener {

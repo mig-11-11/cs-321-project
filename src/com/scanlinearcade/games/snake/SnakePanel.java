@@ -10,10 +10,15 @@
 
 package com.scanlinearcade.games.snake;
 
+import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 import java.awt.*;
+import java.awt.Window;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.UUID;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 public class SnakePanel extends JPanel {
@@ -26,15 +31,29 @@ public class SnakePanel extends JPanel {
 
     private final SnakeModel model = new SnakeModel(COLS, ROWS);
     private final Timer timer;
+    private final Runnable returnToHubAction;
+    private boolean gameOverDialogShown;
+    private String currentRunToken;
 
     public SnakePanel() {
+        this(null);
+    }
+
+    public SnakePanel(Runnable returnToHubAction) {
         setBackground(Color.WHITE);
         setFocusable(true);
+        this.returnToHubAction = returnToHubAction;
+        this.currentRunToken = UUID.randomUUID().toString();
 
         // Game loop
         timer = new Timer(FPS_MS, e -> 
         {
             model.step();
+            if (model.isGameOver() && !gameOverDialogShown) {
+                gameOverDialogShown = true;
+                timer.stop();
+                SwingUtilities.invokeLater(this::showSharedGameOverMenu);
+            }
             repaint();
         });
         timer.start();
@@ -54,8 +73,52 @@ public class SnakePanel extends JPanel {
                     case KeyEvent.VK_SPACE -> togglePause();
                     default -> { }
                 }
+
+                if (e.getKeyCode() == KeyEvent.VK_R) {
+                    gameOverDialogShown = false;
+                    currentRunToken = UUID.randomUUID().toString();
+                    if (!timer.isRunning()) {
+                        timer.start();
+                    }
+                }
             }
         });
+    }
+
+    private void showSharedGameOverMenu() {
+        GameOverDialog.showDialog(
+                this,
+                "snake",
+            currentRunToken,
+                "Game Over",
+                model.getScore(),
+                this::restartFromDialog,
+                this::returnToHubFromDialog
+        );
+    }
+
+    private void restartFromDialog() {
+        model.reset();
+        gameOverDialogShown = false;
+        currentRunToken = UUID.randomUUID().toString();
+        if (!timer.isRunning()) {
+            timer.start();
+        }
+        requestFocusInWindow();
+        repaint();
+    }
+
+    private void returnToHubFromDialog() {
+        if (returnToHubAction != null) {
+            returnToHubAction.run();
+            return;
+        }
+
+        Window window = SwingUtilities.getWindowAncestor(this);
+        new ArcadeFrame().setVisible(true);
+        if (window != null) {
+            window.dispose();
+        }
     }
 
     @Override
