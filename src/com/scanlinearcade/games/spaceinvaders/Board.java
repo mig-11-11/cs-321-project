@@ -36,6 +36,7 @@ public class Board extends JPanel {
     private int deaths = 0;
 
     private boolean inGame = true;
+    private boolean isPaused = false; //new
     private String explImg = "src/com/scanlinearcade/games/images/explosion.png";
     private String message = "Game Over";
 
@@ -57,7 +58,7 @@ public class Board extends JPanel {
 
         addKeyListener(new TAdapter());
         setFocusable(true);
-        d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+        d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT); //358, 350
         setBackground(Color.black);
 
         timer = new Timer(Commons.DELAY, new GameCycle());
@@ -221,6 +222,8 @@ public class Board extends JPanel {
      */
     private void update() {
 
+        if (isPaused) return; // STOP updating game
+        
         if (deaths == Commons.NUMBER_OF_ALIENS_TO_DESTROY) {
 
             inGame = false;
@@ -401,6 +404,10 @@ public class Board extends JPanel {
         @Override
         public void keyPressed(KeyEvent e) {
 
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) 
+                isPaused = !isPaused; // toggle pause
+            
+            
             player.keyPressed(e);
 
             int x = player.getX();
