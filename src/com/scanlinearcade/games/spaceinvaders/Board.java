@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import com.scanlinearcade.app.PausePanel;
+import javax.swing.JLayeredPane;
 
 /**
  * handles operations of the game, displays game for user
@@ -41,12 +43,16 @@ public class Board extends JPanel {
     private String message = "Game Over";
 
     private Timer timer;
-
+    private JLayeredPane layeredPane;
+    private PausePanel pause;
+    
     /**
      * runs board and sets game components on board
+     * @param layeredPane
      */
-    public Board() {
+    public Board(JLayeredPane layeredPane) {
 
+        this.layeredPane = layeredPane;
         initBoard();
         gameInit();
     }
@@ -55,12 +61,23 @@ public class Board extends JPanel {
      * sets template for board
      */
     private void initBoard() {
-
+        
         addKeyListener(new TAdapter());
         setFocusable(true);
         d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT); //358, 350
         setBackground(Color.black);
+        
+        // 🔹 Add THIS (game) to layered pane
+        this.setBounds(0, 0, d.width, d.height);
+        layeredPane.add(this, JLayeredPane.DEFAULT_LAYER);
 
+        // 🔹 Create pause panel
+        pause = new PausePanel();
+        pause.setBounds(0, 0, d.width, d.height);
+        pause.setVisible(false);
+
+        layeredPane.add(pause, JLayeredPane.PALETTE_LAYER);
+        
         timer = new Timer(Commons.DELAY, new GameCycle());
         timer.start();
 
@@ -86,6 +103,13 @@ public class Board extends JPanel {
 
         player = new Player();
         shot = new Shot();
+    }
+    
+    public void togglePause() {
+        isPaused = !isPaused;
+        pause.setVisible(isPaused);
+        
+        System.out.println("Paused: " + isPaused);
     }
 
     /**
@@ -193,6 +217,20 @@ public class Board extends JPanel {
 
         Toolkit.getDefaultToolkit().sync();
     }
+    
+    /*private void drawPauseMenu(Graphics g) {
+        // dark overlay
+        g.setColor(new Color(0, 0, 0, 150));
+        g.fillRect(0, 0, getWidth(), getHeight());
+
+        // text
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Monospaced", Font.BOLD, 40));
+        g.drawString("PAUSED", getWidth()/2 - getWidth()/5, getHeight()/2 - getHeight()/4);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 20));
+        g.drawString("Press ESC to Resume", 260, 260);
+    } */
 
     /**
      * displays the game over screen when player loses
@@ -404,10 +442,10 @@ public class Board extends JPanel {
         @Override
         public void keyPressed(KeyEvent e) {
 
-            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) 
-                isPaused = !isPaused; // toggle pause
+            if (e.getKeyCode() == KeyEvent.VK_P) 
+                togglePause(); // toggle pause
             
-            
+
             player.keyPressed(e);
 
             int x = player.getX();
