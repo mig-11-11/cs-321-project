@@ -65,30 +65,45 @@ public class SnakePanel extends JPanel {
     private boolean gameOverDialogShown;
     private String currentRunToken;
 
-    public SnakePanel() {
+    public SnakePanel() 
+    {
         this(null);
     }
 
-    public SnakePanel(Runnable returnToHubAction) {
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public SnakePanel(Runnable returnToHubAction) 
+    {
         setBackground(Color.WHITE);
         setFocusable(true);
         this.returnToHubAction = returnToHubAction;
         this.currentRunToken = UUID.randomUUID().toString();
+        this.gameOverDialogShown = false;
 
         // Game loop, updates the model then repaints the panel
-        Timer createdTimer = new Timer(FPS_MS, null);
-        createdTimer.addActionListener(e -> 
+       
+        timer = new Timer(FPS_MS,e -> 
         {
             model.step();
-            if (model.isGameOver() && !gameOverDialogShown) {
+            
+            if(model.isGameOver() && !gameOverDialogShown) 
+            {
                 gameOverDialogShown = true;
-                createdTimer.stop();
+                stopGameLoop();
                 SwingUtilities.invokeLater(this::showSharedGameOverMenu);
             }
             repaint();
         });
-        timer = createdTimer;
-        timer.start();
 
         // Keyboard input tp mopel actions
         addKeyListener(new KeyAdapter() 
@@ -234,47 +249,16 @@ public class SnakePanel extends JPanel {
         g2.setFont(new Font("Consolas", Font.PLAIN, 16));
         g2.drawString("Score: " + model.getScore() + "   [Space]=Pause  [R]=Restart", 10, boardH + 25);
 
-        // Overlay for game over
-        if (model.isGameOver()) {
-            g2.setColor(new Color(0, 0, 0, 170));
-            g2.fillRect(0, 0, boardW, boardH);
-
-            g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Consolas", Font.BOLD, 36));
-            drawCentered(g2, "GAME OVER", new Rectangle(0, 0, boardW, boardH - 20));
-
-            g2.setFont(new Font("Consolas", Font.PLAIN, 18));
-            drawCentered(g2, "Press R to restart", new Rectangle(0, 40, boardW, boardH));
-        }
-
         g2.dispose();
     }
 
-    /**
-     * Draws a string centered inside the given rectangle using the current font.
-     *
-     * <pre>
-     * private static void drawCentered(Graphics2D g2, String text, Rectangle rect)
-     * </pre>
-     *
-     * @param g2 graphics context used to render text
-     * @param text text to draw
-     * @param rect rectangle to center the text within
-     */
-    private static void drawCentered(Graphics2D g2, String text, Rectangle rect) {
-        FontMetrics fm = g2.getFontMetrics();
-        int x = rect.x + (rect.width - fm.stringWidth(text)) / 2;
-        int y = rect.y + (rect.height - fm.getHeight()) / 2 + fm.getAscent();
-        g2.drawString(text, x, y);
-    }
+ 
     
    
-    
-    
    
-        public void startGameLoop()
+    public void startGameLoop()
     {
-        if (!timer.isRunning())
+        if(!timer.isRunning())
         {
             timer.start();
         }
@@ -283,7 +267,7 @@ public class SnakePanel extends JPanel {
 
     public void stopGameLoop()
     {
-        if (timer.isRunning())
+        if(timer.isRunning())
         {
             timer.stop();
         }
@@ -292,6 +276,8 @@ public class SnakePanel extends JPanel {
     public void resetGame()
     {
         model.reset();
+        gameOverDialogShown = false;
+        currentRunToken = UUID.randomUUID().toString();
         repaint();
     }
     

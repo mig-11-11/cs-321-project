@@ -306,4 +306,26 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 			rightPressed = false;
 		}
 	}
+        
+        
+        
+        
+    public void startGameLoop()
+    {
+        if (!timer.isRunning())
+        {
+            timer.start();
+        }
+        requestFocusInWindow();
+    }
+
+    public void stopGameLoop()
+    {
+        if (timer.isRunning())
+        {
+            timer.stop();
+        }
+    }
+
+
 }

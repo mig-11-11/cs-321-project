@@ -56,12 +56,13 @@ public class Board extends JPanel {
         this(null);
     }
 
-    public Board(Runnable returnToHubAction) {
+    public Board(Runnable returnToHubAction) 
+    {
 
         this.returnToHubAction = returnToHubAction;
 
         initBoard();
-        gameInit();
+        
     }
 
     /**
@@ -75,7 +76,7 @@ public class Board extends JPanel {
         setBackground(Color.black);
 
         timer = new Timer(Commons.DELAY, new GameCycle());
-        timer.start();
+       
 
         gameInit();
     }
@@ -411,13 +412,10 @@ public class Board extends JPanel {
         );
     }
 
-    private void restartFromDialog() {
-        gameInit();
-        if (!timer.isRunning()) {
-            timer.start();
-        }
-        requestFocusInWindow();
-        repaint();
+    private void restartFromDialog() 
+    {
+        resetGame();
+        startGameLoop();
     }
 
     private void returnToHubFromDialog() {
@@ -476,4 +474,31 @@ public class Board extends JPanel {
             }
         }
     }
+    
+   public void resetGame()
+{
+    gameInit();
+    repaint();
+}
+
+public void startGameLoop()
+{
+    if (!timer.isRunning())
+    {
+        timer.start();
+    }
+
+    requestFocusInWindow();
+}
+
+public void stopGameLoop()
+{
+    if (timer.isRunning())
+    {
+        timer.stop();
+    }
+} 
+    
+   
+    
 }
