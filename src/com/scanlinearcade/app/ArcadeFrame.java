@@ -27,7 +27,7 @@ public class ArcadeFrame extends JFrame
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cards = new JPanel(cardLayout);
     private final SnakePanel snakePanel = new SnakePanel();
-
+ 
     
     public ArcadeFrame()
     {
@@ -57,10 +57,10 @@ public class ArcadeFrame extends JFrame
             createPlaceholderPanel("Breakout", "Breakout will be plugged in here."),
             this::showMenu
         );
-
+        
         JPanel invadersScreen = createGameScreen(
             "Space Invaders",
-            createPlaceholderPanel("Space Invaders", "Space Invaders will be plugged in here."),
+            createPlaceholderPanel("Breakout", "Breakout will be plugged in here."),
             this::showMenu
         );
 
