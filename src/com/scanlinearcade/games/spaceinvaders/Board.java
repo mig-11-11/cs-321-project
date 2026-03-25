@@ -54,7 +54,6 @@ public class Board extends JPanel {
 
         this.layeredPane = layeredPane;
         initBoard();
-        gameInit();
     }
 
     /**
@@ -108,7 +107,13 @@ public class Board extends JPanel {
     public void togglePause() {
         isPaused = !isPaused;
         pause.setVisible(isPaused);
-        
+
+        if (isPaused) {
+            timer.stop();
+        } else {
+            timer.start();
+        }
+
         System.out.println("Paused: " + isPaused);
     }
 
