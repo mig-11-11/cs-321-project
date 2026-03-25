@@ -1,5 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
+import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 //import com.zetcode.sprite.Alien;
 //import com.zetcode.sprite.Player;
 //import com.zetcode.sprite.Shot;
@@ -12,6 +14,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Toolkit;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -20,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import com.scanlinearcade.app.PausePanel;
-import javax.swing.JLayeredPane;
+import java.util.UUID;
+import javax.swing.SwingUtilities;
 
 /**
  * handles operations of the game, displays game for user
@@ -38,47 +41,42 @@ public class Board extends JPanel {
     private int deaths = 0;
 
     private boolean inGame = true;
-    private boolean isPaused = false; //new
     private String explImg = "src/com/scanlinearcade/games/images/explosion.png";
     private String message = "Game Over";
 
     private Timer timer;
-    private JLayeredPane layeredPane;
-    private PausePanel pause;
-    
+    private final Runnable returnToHubAction;
+    private boolean gameOverDialogShown;
+    private String currentRunToken;
+
     /**
      * runs board and sets game components on board
-     * @param layeredPane
      */
-    public Board(JLayeredPane layeredPane) {
+    public Board() {
+        this(null);
+    }
 
-        this.layeredPane = layeredPane;
+    public Board(Runnable returnToHubAction) 
+    {
+
+        this.returnToHubAction = returnToHubAction;
+
         initBoard();
+        
     }
 
     /**
      * sets template for board
      */
     private void initBoard() {
-        
+
         addKeyListener(new TAdapter());
         setFocusable(true);
-        d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT); //358, 350
+        d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
         setBackground(Color.black);
-        
-        // 🔹 Add THIS (game) to layered pane
-        this.setBounds(0, 0, d.width, d.height);
-        layeredPane.add(this, JLayeredPane.DEFAULT_LAYER);
 
-        // 🔹 Create pause panel
-        pause = new PausePanel();
-        pause.setBounds(0, 0, d.width, d.height);
-        pause.setVisible(false);
-
-        layeredPane.add(pause, JLayeredPane.PALETTE_LAYER);
-        
         timer = new Timer(Commons.DELAY, new GameCycle());
-        timer.start();
+       
 
         gameInit();
     }
@@ -102,19 +100,12 @@ public class Board extends JPanel {
 
         player = new Player();
         shot = new Shot();
-    }
-    
-    public void togglePause() {
-        isPaused = !isPaused;
-        pause.setVisible(isPaused);
-
-        if (isPaused) {
-            timer.stop();
-        } else {
-            timer.start();
-        }
-
-        System.out.println("Paused: " + isPaused);
+        deaths = 0;
+        direction = -1;
+        inGame = true;
+        message = "Game Over";
+        gameOverDialogShown = false;
+        currentRunToken = UUID.randomUUID().toString();
     }
 
     /**
@@ -217,25 +208,16 @@ public class Board extends JPanel {
                 timer.stop();
             }
 
+            if (!gameOverDialogShown) {
+                gameOverDialogShown = true;
+                SwingUtilities.invokeLater(this::showSharedGameOverMenu);
+            }
+
             gameOver(g);
         }
 
         Toolkit.getDefaultToolkit().sync();
     }
-    
-    /*private void drawPauseMenu(Graphics g) {
-        // dark overlay
-        g.setColor(new Color(0, 0, 0, 150));
-        g.fillRect(0, 0, getWidth(), getHeight());
-
-        // text
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Monospaced", Font.BOLD, 40));
-        g.drawString("PAUSED", getWidth()/2 - getWidth()/5, getHeight()/2 - getHeight()/4);
-
-        g.setFont(new Font("Arial", Font.PLAIN, 20));
-        g.drawString("Press ESC to Resume", 260, 260);
-    } */
 
     /**
      * displays the game over screen when player loses
@@ -265,8 +247,6 @@ public class Board extends JPanel {
      */
     private void update() {
 
-        if (isPaused) return; // STOP updating game
-        
         if (deaths == Commons.NUMBER_OF_ALIENS_TO_DESTROY) {
 
             inGame = false;
@@ -420,9 +400,37 @@ public class Board extends JPanel {
         repaint();
     }
 
-    /**
-     * 
-     */
+    private void showSharedGameOverMenu() {
+        GameOverDialog.showDialog(
+                this,
+                "spaceinvaders",
+            currentRunToken,
+                message,
+                deaths * 10,
+                this::restartFromDialog,
+                this::returnToHubFromDialog
+        );
+    }
+
+    private void restartFromDialog() 
+    {
+        resetGame();
+        startGameLoop();
+    }
+
+    private void returnToHubFromDialog() {
+        if (returnToHubAction != null) {
+            returnToHubAction.run();
+            return;
+        }
+
+        Window window = SwingUtilities.getWindowAncestor(this);
+        new ArcadeFrame().setVisible(true);
+        if (window != null) {
+            window.dispose();
+        }
+    }
+
     private class GameCycle implements ActionListener {
 
         @Override
@@ -447,10 +455,6 @@ public class Board extends JPanel {
         @Override
         public void keyPressed(KeyEvent e) {
 
-            if (e.getKeyCode() == KeyEvent.VK_P) 
-                togglePause(); // toggle pause
-            
-
             player.keyPressed(e);
 
             int x = player.getX();
@@ -470,4 +474,31 @@ public class Board extends JPanel {
             }
         }
     }
+    
+   public void resetGame()
+{
+    gameInit();
+    repaint();
+}
+
+public void startGameLoop()
+{
+    if (!timer.isRunning())
+    {
+        timer.start();
+    }
+
+    requestFocusInWindow();
+}
+
+public void stopGameLoop()
+{
+    if (timer.isRunning())
+    {
+        timer.stop();
+    }
+} 
+    
+   
+    
 }

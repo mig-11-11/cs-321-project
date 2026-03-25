@@ -31,6 +31,7 @@ import java.awt.Rectangle;
  * <p>Package-private API Signatures: None in current implementation.
 * 	Goals:
 * - Add function for spawning more bricks after the first set is cleared, and add a way to track how many sets have been cleared to increase difficulty.
+* - Add durability to bricks in the back rows so they require multiple hits to break, and add a visual indicator of durability (color or cracks)
  */
 public class Bricks {
 	private boolean[][] alive;
@@ -90,7 +91,7 @@ public class Bricks {
 				if (ballRect.intersects(brickRect)) {
 					alive[r][c] = false;
 					if (score != null) {
-						score.addScore(50);
+						score.addScore(scoreForRow(r));
 					}
 
 					Rectangle overlap = ballRect.intersection(brickRect);
@@ -104,6 +105,13 @@ public class Bricks {
 			}
 		}
 		return false;
+	}
+
+	private int scoreForRow(int row) {
+		int frontRowPoints = 50;
+		int bonusPerBackRow = 15;
+		int depthFromFront = (rows - 1) - row;
+		return frontRowPoints + (depthFromFront * bonusPerBackRow);
 	}
 
 	/**

@@ -10,10 +10,15 @@
 
 package com.scanlinearcade.games.snake;
 
+import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 import java.awt.*;
+import java.awt.Window;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.UUID;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 /**
@@ -56,32 +61,49 @@ public class SnakePanel extends JPanel {
     
     /** Swing timer driving the update loop */
     private final Timer timer;
-    /**
-     * Constructs the Snake panel, initializes the update loop, and registers keyboard input.
-     *
-     * <p>Key bindings:</p>
-     * <ul>
-     *   <li>Move: Arrow keys or WASD</li>
-     *   <li>Restart: R</li>
-     *   <li>Pause/Resume: Space</li>
-     * </ul>
-     *
-     * <pre>
-     * public SnakePanel()
-     * </pre>
-     */
-  
-    public SnakePanel() {
+    private final Runnable returnToHubAction;
+    private boolean gameOverDialogShown;
+    private String currentRunToken;
+
+    public SnakePanel() 
+    {
+        this(null);
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public SnakePanel(Runnable returnToHubAction) 
+    {
         setBackground(Color.WHITE);
         setFocusable(true);
+        this.returnToHubAction = returnToHubAction;
+        this.currentRunToken = UUID.randomUUID().toString();
+        this.gameOverDialogShown = false;
 
         // Game loop, updates the model then repaints the panel
-        timer = new Timer(FPS_MS, e -> 
+       
+        timer = new Timer(FPS_MS,e -> 
         {
             model.step();
+            
+            if(model.isGameOver() && !gameOverDialogShown) 
+            {
+                gameOverDialogShown = true;
+                stopGameLoop();
+                SwingUtilities.invokeLater(this::showSharedGameOverMenu);
+            }
             repaint();
         });
-        timer.start();
 
         // Keyboard input tp mopel actions
         addKeyListener(new KeyAdapter() 
@@ -98,20 +120,54 @@ public class SnakePanel extends JPanel {
                     case KeyEvent.VK_SPACE -> togglePause();
                     default -> { }
                 }
+
+                if (e.getKeyCode() == KeyEvent.VK_R) {
+                    gameOverDialogShown = false;
+                    currentRunToken = UUID.randomUUID().toString();
+                    if (!timer.isRunning()) {
+                        timer.start();
+                    }
+                }
             }
         });
     }
 
-    
-      /**
-     * Returns the preferred size of the panel based on the grid size plus HUD space.
-     *
-     * <pre>
-     * public Dimension getPreferredSize()
-     * </pre>
-     *
-     * @return preferred panel size (grid area + HUD bar)
-     */
+    private void showSharedGameOverMenu() {
+        GameOverDialog.showDialog(
+                this,
+                "snake",
+            currentRunToken,
+                "Game Over",
+                model.getScore(),
+                this::restartFromDialog,
+                this::returnToHubFromDialog
+        );
+    }
+
+    private void restartFromDialog() {
+        model.reset();
+        gameOverDialogShown = false;
+        currentRunToken = UUID.randomUUID().toString();
+        if (!timer.isRunning()) {
+            timer.start();
+        }
+        requestFocusInWindow();
+        repaint();
+    }
+
+    private void returnToHubFromDialog() {
+        if (returnToHubAction != null) {
+            returnToHubAction.run();
+            return;
+        }
+
+        Window window = SwingUtilities.getWindowAncestor(this);
+        new ArcadeFrame().setVisible(true);
+        if (window != null) {
+            window.dispose();
+        }
+    }
+
     @Override
     public Dimension getPreferredSize() 
     {
@@ -193,47 +249,16 @@ public class SnakePanel extends JPanel {
         g2.setFont(new Font("Consolas", Font.PLAIN, 16));
         g2.drawString("Score: " + model.getScore() + "   [Space]=Pause  [R]=Restart", 10, boardH + 25);
 
-        // Overlay for game over
-        if (model.isGameOver()) {
-            g2.setColor(new Color(0, 0, 0, 170));
-            g2.fillRect(0, 0, boardW, boardH);
-
-            g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Consolas", Font.BOLD, 36));
-            drawCentered(g2, "GAME OVER", new Rectangle(0, 0, boardW, boardH - 20));
-
-            g2.setFont(new Font("Consolas", Font.PLAIN, 18));
-            drawCentered(g2, "Press R to restart", new Rectangle(0, 40, boardW, boardH));
-        }
-
         g2.dispose();
     }
 
-    /**
-     * Draws a string centered inside the given rectangle using the current font.
-     *
-     * <pre>
-     * private static void drawCentered(Graphics2D g2, String text, Rectangle rect)
-     * </pre>
-     *
-     * @param g2 graphics context used to render text
-     * @param text text to draw
-     * @param rect rectangle to center the text within
-     */
-    private static void drawCentered(Graphics2D g2, String text, Rectangle rect) {
-        FontMetrics fm = g2.getFontMetrics();
-        int x = rect.x + (rect.width - fm.stringWidth(text)) / 2;
-        int y = rect.y + (rect.height - fm.getHeight()) / 2 + fm.getAscent();
-        g2.drawString(text, x, y);
-    }
+ 
     
    
-    
-    
    
-        public void startGameLoop()
+    public void startGameLoop()
     {
-        if (!timer.isRunning())
+        if(!timer.isRunning())
         {
             timer.start();
         }
@@ -242,7 +267,7 @@ public class SnakePanel extends JPanel {
 
     public void stopGameLoop()
     {
-        if (timer.isRunning())
+        if(timer.isRunning())
         {
             timer.stop();
         }
@@ -251,6 +276,8 @@ public class SnakePanel extends JPanel {
     public void resetGame()
     {
         model.reset();
+        gameOverDialogShown = false;
+        currentRunToken = UUID.randomUUID().toString();
         repaint();
     }
     

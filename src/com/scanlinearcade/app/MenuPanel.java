@@ -1,9 +1,11 @@
 package com.scanlinearcade.app;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -17,39 +19,58 @@ import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import javax.swing.border.LineBorder;
 
 public class MenuPanel extends JPanel
 {
-    private static final String IMAGE_PATH =
+    private static final String BACKGROUND_PATH =
         "/com/scanlinearcade/assets/arcade_menu_bg.png";
 
-    // Makes the whole cabinet art larger on startup
+    private static final String SNAKE_ICON_PATH =
+        "/com/scanlinearcade/assets/Snake.png";
+
+    private static final String BREAKOUT_ICON_PATH =
+        "/com/scanlinearcade/assets/Breakout.png";
+
+    private static final String INVADERS_ICON_PATH =
+        "/com/scanlinearcade/assets/Space_Invaders.png";
+
+    private static final String TROPHY_ICON_PATH =
+        "/com/scanlinearcade/assets/Trophy.png";
+
+    private static final String COG_ICON_PATH =
+        "/com/scanlinearcade/assets/Cog.png";
+
     private static final int DEFAULT_SCALE = 2;
 
-    // These are based on the original 600 x 600 image
-    // They define where the cabinet monitor area is
+    // Base size of the cabinet image
     private static final int BASE_IMAGE_W = 600;
     private static final int BASE_IMAGE_H = 600;
 
+    // Monitor area inside the cabinet image
     private static final int SCREEN_X = 65;
     private static final int SCREEN_Y = 55;
     private static final int SCREEN_W = 470;
     private static final int SCREEN_H = 355;
 
     private static final Color CYAN = new Color(0, 255, 200);
-    private static final Color MAGENTA = new Color(255, 60, 180);
-    private static final Color YELLOW = new Color(255, 220, 80);
-    private static final Color PANEL_BG = new Color(0, 0, 0, 150);
+    private static final Color PANEL_BG = new Color(0, 0, 0, 70);
+    private static final Color HOVER_TEXT = new Color(255, 220, 80);
 
     private BufferedImage backgroundImage;
-    private final JPanel screenOverlay;
+    private final JPanel monitorOverlay;
 
-    public MenuPanel(Runnable snakeAction, Runnable breakoutAction, Runnable invadersAction)
+    public MenuPanel(
+        Runnable snakeAction,
+        Runnable breakoutAction,
+        Runnable invadersAction,
+        Runnable scoresAction,
+        Runnable settingsAction
+    )
     {
         loadBackgroundImage();
 
@@ -57,7 +78,6 @@ public class MenuPanel extends JPanel
         setBackground(Color.BLACK);
         setOpaque(true);
 
-        // Make the whole panel larger based on the image size
         if (backgroundImage != null)
         {
             int scaledWidth = backgroundImage.getWidth() * DEFAULT_SCALE;
@@ -69,24 +89,37 @@ public class MenuPanel extends JPanel
             setPreferredSize(new Dimension(1000, 1000));
         }
 
-        screenOverlay = createScreenOverlay(snakeAction, breakoutAction, invadersAction);
-        add(screenOverlay);
+        monitorOverlay = createMonitorOverlay(
+            snakeAction,
+            breakoutAction,
+            invadersAction,
+            scoresAction,
+            settingsAction
+        );
+
+        add(monitorOverlay);
     }
 
     private void loadBackgroundImage()
     {
         try
         {
-            backgroundImage = ImageIO.read(getClass().getResource(IMAGE_PATH));
+            backgroundImage = ImageIO.read(getClass().getResource(BACKGROUND_PATH));
         }
         catch (IOException | IllegalArgumentException e)
         {
-            System.err.println("Could not load arcade menu background image: " + IMAGE_PATH);
+            System.err.println("Could not load menu background image: " + BACKGROUND_PATH);
             backgroundImage = null;
         }
     }
 
-    private JPanel createScreenOverlay(Runnable snakeAction, Runnable breakoutAction, Runnable invadersAction)
+    private JPanel createMonitorOverlay(
+        Runnable snakeAction,
+        Runnable breakoutAction,
+        Runnable invadersAction,
+        Runnable scoresAction,
+        Runnable settingsAction
+    )
     {
         JPanel panel = new JPanel()
         {
@@ -97,15 +130,12 @@ public class MenuPanel extends JPanel
 
                 Graphics2D g2 = (Graphics2D) g.create();
 
-                // Dark transparent box so text is readable on the monitor
+                // Very light dark tint for readability
                 g2.setColor(PANEL_BG);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
 
-                // Neon border
-                g2.setColor(CYAN);
-
                 // Subtle scanlines
-                g2.setColor(new Color(255, 255, 255, 18));
+                g2.setColor(new Color(255, 255, 255, 10));
                 for (int y = 0; y < getHeight(); y += 4)
                 {
                     g2.drawLine(0, y, getWidth(), y);
@@ -116,73 +146,169 @@ public class MenuPanel extends JPanel
         };
 
         panel.setOpaque(false);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        panel.setLayout(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 18, 18, 18));
 
-        JLabel title = new JLabel("SCANLINE ARCADE");
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title.setForeground(CYAN);
-        title.setFont(new Font("Monospaced", Font.BOLD, 30));
+        JPanel headerPanel = createHeaderPanel();
 
-        JLabel subtitle = new JLabel("SELECT A GAME");
-        subtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
-        subtitle.setForeground(Color.WHITE);
-        subtitle.setFont(new Font("Monospaced", Font.BOLD, 16));
+        JPanel gamesPanel = createGamesPanel(
+            snakeAction,
+            breakoutAction,
+            invadersAction
+        );
 
-        JButton snakeButton = createMenuButton("SNAKE", CYAN, snakeAction);
-        JButton breakoutButton = createMenuButton("BREAKOUT", MAGENTA, breakoutAction);
-        JButton invadersButton = createMenuButton("SPACE INVADERS", YELLOW, invadersAction);
+        JPanel utilityPanel = createUtilityPanel(
+            scoresAction,
+            settingsAction
+        );
 
-        panel.add(Box.createVerticalGlue());
-        panel.add(title);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(subtitle);
-        panel.add(Box.createRigidArea(new Dimension(0, 28)));
-        panel.add(snakeButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 14)));
-        panel.add(breakoutButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 14)));
-        panel.add(invadersButton);
-        panel.add(Box.createVerticalGlue());
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setOpaque(false);
+
+        JPanel spacerPanel = new JPanel();
+        spacerPanel.setOpaque(false);
+
+        contentPanel.add(gamesPanel, BorderLayout.NORTH);
+        contentPanel.add(spacerPanel, BorderLayout.CENTER);
+        contentPanel.add(utilityPanel, BorderLayout.SOUTH);
+
+        panel.add(headerPanel, BorderLayout.NORTH);
+        panel.add(contentPanel, BorderLayout.CENTER);
 
         return panel;
     }
 
-    private JButton createMenuButton(String text, Color accent, Runnable action)
+    private JPanel createHeaderPanel()
     {
-        JButton button = new JButton(text);
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setMaximumSize(new Dimension(270, 48));
-        button.setPreferredSize(new Dimension(270, 48));
-        button.setHorizontalAlignment(SwingConstants.CENTER);
+        JPanel header = new JPanel();
+        header.setOpaque(false);
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
-        button.setFont(new Font("Monospaced", Font.BOLD, 18));
-        button.setForeground(accent);
-        button.setBackground(new Color(10, 10, 10));
-        button.setFocusPainted(false);
-        button.setBorder(new LineBorder(accent, 3));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        JLabel title = new JLabel("SCANLINE ARCADE");
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setForeground(CYAN);
+        title.setFont(new Font("Monospaced", Font.BOLD, 26));
 
-        button.addActionListener(e -> action.run());
 
-        button.addMouseListener(new MouseAdapter()
+
+        header.add(title);
+        header.add(Box.createRigidArea(new Dimension(0, 7)));
+
+        return header;
+    }
+
+    private JPanel createGamesPanel(
+        Runnable snakeAction,
+        Runnable breakoutAction,
+        Runnable invadersAction
+    )
+    {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 24, 10));
+        panel.setOpaque(false);
+
+        panel.add(createIconEntry("Snake", SNAKE_ICON_PATH, snakeAction));
+        panel.add(createIconEntry("Breakout", BREAKOUT_ICON_PATH, breakoutAction));
+        panel.add(createIconEntry("Space Invaders", INVADERS_ICON_PATH, invadersAction));
+
+        return panel;
+    }
+
+    private JPanel createUtilityPanel(
+        Runnable scoresAction,
+        Runnable settingsAction
+    )
+    {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 40, 10));
+        panel.setOpaque(false);
+
+        panel.add(createIconEntry("High Scores", TROPHY_ICON_PATH, scoresAction));
+        panel.add(createIconEntry("Settings", COG_ICON_PATH, settingsAction));
+
+        return panel;
+    }
+
+    private JPanel createIconEntry(String labelText, String imagePath, Runnable action)
+    {
+        JPanel entryPanel = new JPanel();
+        entryPanel.setOpaque(false);
+        entryPanel.setLayout(new BoxLayout(entryPanel, BoxLayout.Y_AXIS));
+        entryPanel.setPreferredSize(new Dimension(110, 122));
+        entryPanel.setMinimumSize(new Dimension(110, 122));
+        entryPanel.setMaximumSize(new Dimension(110, 122));
+
+        JButton iconButton = new JButton();
+        iconButton.setPreferredSize(new Dimension(96, 96));
+        iconButton.setMinimumSize(new Dimension(96, 96));
+        iconButton.setMaximumSize(new Dimension(96, 96));
+        iconButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        iconButton.setIcon(loadScaledIcon(imagePath, 96, 96));
+        iconButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        iconButton.setFocusPainted(false);
+        iconButton.setBorderPainted(false);
+        iconButton.setContentAreaFilled(false);
+        iconButton.setOpaque(false);
+
+        JLabel hoverLabel = new JLabel(" ", SwingConstants.CENTER);
+        hoverLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        hoverLabel.setForeground(HOVER_TEXT);
+        hoverLabel.setFont(new Font("Monospaced", Font.BOLD, 12));
+        hoverLabel.setPreferredSize(new Dimension(110, 16));
+        hoverLabel.setMinimumSize(new Dimension(110, 16));
+        hoverLabel.setMaximumSize(new Dimension(110, 16));
+
+        iconButton.addActionListener(e -> action.run());
+
+        iconButton.addMouseListener(new MouseAdapter()
         {
             @Override
             public void mouseEntered(MouseEvent e)
             {
-                button.setBackground(accent);
-                button.setForeground(Color.BLACK);
+                hoverLabel.setText(labelText);
             }
 
             @Override
             public void mouseExited(MouseEvent e)
             {
-                button.setBackground(new Color(10, 10, 10));
-                button.setForeground(accent);
+                hoverLabel.setText(" ");
             }
         });
 
-        return button;
+        entryPanel.add(iconButton);
+        entryPanel.add(Box.createRigidArea(new Dimension(0, 4)));
+        entryPanel.add(hoverLabel);
+
+        return entryPanel;
+    }
+
+    private ImageIcon loadScaledIcon(String path, int width, int height)
+    {
+        try
+        {
+            BufferedImage source = ImageIO.read(getClass().getResource(path));
+
+            BufferedImage scaled = new BufferedImage(
+                width,
+                height,
+                BufferedImage.TYPE_INT_ARGB
+            );
+
+            Graphics2D g2 = scaled.createGraphics();
+            g2.setRenderingHint(
+                RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
+            );
+            g2.drawImage(source, 0, 0, width, height, null);
+            g2.dispose();
+
+            return new ImageIcon(scaled);
+        }
+        catch (IOException | IllegalArgumentException e)
+        {
+            System.err.println("Could not load icon: " + path);
+            return null;
+        }
     }
 
     @Override
@@ -192,13 +318,12 @@ public class MenuPanel extends JPanel
 
         Rectangle imageBounds = getScaledImageBounds();
 
-        // Position the overlay inside the monitor area of the cabinet art
         int overlayX = imageBounds.x + (imageBounds.width * SCREEN_X) / BASE_IMAGE_W;
         int overlayY = imageBounds.y + (imageBounds.height * SCREEN_Y) / BASE_IMAGE_H;
         int overlayW = (imageBounds.width * SCREEN_W) / BASE_IMAGE_W;
         int overlayH = (imageBounds.height * SCREEN_H) / BASE_IMAGE_H;
 
-        screenOverlay.setBounds(overlayX, overlayY, overlayW, overlayH);
+        monitorOverlay.setBounds(overlayX, overlayY, overlayW, overlayH);
     }
 
     private Rectangle getScaledImageBounds()

@@ -12,6 +12,7 @@ package com.scanlinearcade.games.breakout;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Domain Model Class: Ball
@@ -24,6 +25,7 @@ import java.awt.Rectangle;
  * <ul>
  *   <li>{@code public Ball(int startX, int startY, int radius)}</li>
  *   <li>{@code public void reset(int startX, int startY)}</li>
+ *   <li>{@code public void reset(int startX, int startY, boolean resetSpeed)}</li>
  *   <li>{@code public boolean update(Rectangle bounds, Paddle paddle, Bricks bricks, BreakoutScore score)}</li>
  *   <li>{@code public void draw(Graphics2D g2)}</li>
  *   <li>{@code public Rectangle getRect()}</li>
@@ -31,9 +33,13 @@ import java.awt.Rectangle;
  *   <li>{@code public void bounceY()}</li>
  *   <li>{@code public double getDx()}</li>
  *   <li>{@code public double getDy()}</li>
+ *   <li>{@code public void increaseLevelSpeed()}</li>
  * </ul>
  *
  * <p>Package-private API Signatures: None in current implementation.
+ * 
+ * Goals: 
+ * - Random ball trajectory upon initialization
  */
 public class Ball {
 	private double x;
@@ -55,9 +61,9 @@ public class Ball {
 	 */
 	public Ball(int startX, int startY, int radius) {
 		this.radius = radius;
-		this.speed = 4.0;
+		this.speed = 6.0;
 		this.speedStep = 0.2;
-		this.maxSpeed = 8.0;
+		this.maxSpeed = 12.0;
 		reset(startX, startY);
 	}
 
@@ -69,10 +75,16 @@ public class Ball {
 	 * @param startY y-coordinate of the reset position
 	 */
 	public void reset(int startX, int startY) {
+		reset(startX, startY, true);
+	}
+
+	public void reset(int startX, int startY, boolean resetSpeed) {
 		this.x = startX;
 		this.y = startY;
-		this.speed = 4.0;
-		setDirection(1.0, -1.0);
+		if (resetSpeed) {
+			this.speed = 6.0;
+		}
+		setRandomLaunchDirection();
 	}
 
 	/**
@@ -115,8 +127,8 @@ public class Ball {
 			dy = -dyMagnitude;
 		}
 
-		if (bricks != null && bricks.handleCollision(this, score)) {
-			increaseSpeed();
+		if (bricks != null) {
+			bricks.handleCollision(this, score);
 		}
 
 		return y - radius > bounds.y + bounds.height;
@@ -179,6 +191,10 @@ public class Ball {
 		return dy;
 	}
 
+	public void increaseLevelSpeed() {
+		increaseSpeed();
+	}
+
 	private void setDirection(double dirX, double dirY) {
 		double length = Math.sqrt(dirX * dirX + dirY * dirY);
 		if (length == 0.0) {
@@ -188,6 +204,14 @@ public class Ball {
 		}
 		dx = (dirX / length) * speed;
 		dy = (dirY / length) * speed;
+	}
+
+	private void setRandomLaunchDirection() {
+		double dirX = ThreadLocalRandom.current().nextDouble(-0.85, 0.85);
+		if (Math.abs(dirX) < 0.2) {
+			dirX = dirX < 0.0 ? -0.2 : 0.2;
+		}
+		setDirection(dirX, -1.0);
 	}
 
 	private void increaseSpeed() {
