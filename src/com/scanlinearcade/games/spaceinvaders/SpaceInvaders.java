@@ -4,10 +4,8 @@
  */
 package com.scanlinearcade.games.spaceinvaders;
 
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import javax.swing.JFrame;
-import javax.swing.JLayeredPane;
 
 /**
  *
@@ -27,16 +25,9 @@ public class SpaceInvaders extends JFrame  {
      * sets board and runs game for user
      */
     private void initUI() {
-        
-        Dimension d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
-        
-        JLayeredPane layeredPane = new JLayeredPane();
-        layeredPane.setPreferredSize(d);
-        
-        new Board(layeredPane);
-        
-        setContentPane(layeredPane);
-        
+
+        add(new Board());
+
         setTitle("Space Invaders");
         setSize(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
 

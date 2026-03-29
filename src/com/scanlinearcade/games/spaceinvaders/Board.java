@@ -2,9 +2,6 @@ package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeFrame;
 import com.scanlinearcade.app.GameOverDialog;
-//import com.zetcode.sprite.Alien;
-//import com.zetcode.sprite.Player;
-//import com.zetcode.sprite.Shot;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
