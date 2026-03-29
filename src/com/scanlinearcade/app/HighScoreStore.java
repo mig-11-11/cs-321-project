@@ -53,7 +53,7 @@ public final class HighScoreStore {
 
         String normalizedName = normalizeName(playerName);
         if (normalizedName.isEmpty()) {
-            normalizedName = "AAA";
+            return false;
         }
 
         List<ScoreEntry> scores = readScoresForGame(gameKey);

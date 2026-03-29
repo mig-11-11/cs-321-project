@@ -10,6 +10,7 @@ import javax.swing.JComponent;
 public class SpaceInvadersGameAdapter implements ArcadeGame
 {
     private final Board board;
+    private boolean firstEntryInstructionsPending = true;
 
     public SpaceInvadersGameAdapter(Runnable returnToHubAction)
     {
@@ -43,6 +44,12 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     @Override
     public void startGameLoop()
     {
+        if (firstEntryInstructionsPending)
+        {
+            board.showInstructionsCard();
+            firstEntryInstructionsPending = false;
+        }
+
         board.startGameLoop();
     }
 

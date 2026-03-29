@@ -15,6 +15,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -102,15 +105,48 @@ public class MenuPanel extends JPanel
 
     private void loadBackgroundImage()
     {
+        backgroundImage = loadImage(
+            BACKGROUND_PATH,
+            "Could not load menu background image: "
+        );
+    }
+
+    private BufferedImage loadImage(String resourcePath, String errorPrefix)
+    {
         try
         {
-            backgroundImage = ImageIO.read(getClass().getResource(BACKGROUND_PATH));
+            var resourceUrl = getClass().getResource(resourcePath);
+
+            if (resourceUrl != null)
+            {
+                return ImageIO.read(resourceUrl);
+            }
+
+            String normalizedPath = resourcePath.startsWith("/")
+                ? resourcePath.substring(1)
+                : resourcePath;
+
+            Path[] fallbackPaths = {
+                Paths.get(normalizedPath),
+                Paths.get("src").resolve(normalizedPath),
+                Paths.get("build", "classes").resolve(normalizedPath)
+            };
+
+            for (Path candidate : fallbackPaths)
+            {
+                if (Files.exists(candidate))
+                {
+                    return ImageIO.read(candidate.toFile());
+                }
+            }
         }
-        catch (IOException | IllegalArgumentException e)
+        catch (IOException e)
         {
-            System.err.println("Could not load menu background image: " + BACKGROUND_PATH);
-            backgroundImage = null;
+            // Falls through to a single consistent error message below.
         }
+
+        System.err.println(errorPrefix + resourcePath);
+        return null;
     }
 
     private JPanel createMonitorOverlay(
@@ -284,31 +320,28 @@ public class MenuPanel extends JPanel
 
     private ImageIcon loadScaledIcon(String path, int width, int height)
     {
-        try
+        BufferedImage source = loadImage(path, "Could not load icon: ");
+
+        if (source == null)
         {
-            BufferedImage source = ImageIO.read(getClass().getResource(path));
-
-            BufferedImage scaled = new BufferedImage(
-                width,
-                height,
-                BufferedImage.TYPE_INT_ARGB
-            );
-
-            Graphics2D g2 = scaled.createGraphics();
-            g2.setRenderingHint(
-                RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
-            );
-            g2.drawImage(source, 0, 0, width, height, null);
-            g2.dispose();
-
-            return new ImageIcon(scaled);
-        }
-        catch (IOException | IllegalArgumentException e)
-        {
-            System.err.println("Could not load icon: " + path);
             return null;
         }
+
+        BufferedImage scaled = new BufferedImage(
+            width,
+            height,
+            BufferedImage.TYPE_INT_ARGB
+        );
+
+        Graphics2D g2 = scaled.createGraphics();
+        g2.setRenderingHint(
+            RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR
+        );
+        g2.drawImage(source, 0, 0, width, height, null);
+        g2.dispose();
+
+        return new ImageIcon(scaled);
     }
 
     @Override

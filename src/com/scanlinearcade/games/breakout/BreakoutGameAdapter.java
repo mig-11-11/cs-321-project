@@ -10,6 +10,7 @@ import javax.swing.JComponent;
 public class BreakoutGameAdapter implements ArcadeGame
 {
     private final BreakPanel panel;
+    private boolean firstEntryInstructionsPending = true;
 
     public BreakoutGameAdapter(Runnable returnToHubAction)
     {
@@ -37,12 +38,18 @@ public class BreakoutGameAdapter implements ArcadeGame
     @Override
     public void resetGame()
     {
-       // panel.resetGame();
+          panel.resetGame();
     }
 
     @Override
     public void startGameLoop()
     {
+        if (firstEntryInstructionsPending)
+        {
+            panel.showInstructionsCard();
+            firstEntryInstructionsPending = false;
+        }
+
         panel.startGameLoop();
     }
 

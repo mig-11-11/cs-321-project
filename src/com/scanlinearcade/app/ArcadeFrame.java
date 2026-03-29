@@ -72,7 +72,7 @@ public class ArcadeFrame extends JFrame
 
     private void registerGames()
     {
-        games.put("snake", new SnakeGameAdapter());
+        games.put("snake", new SnakeGameAdapter(() -> returnFromGame("snake")));
         games.put("breakout", new BreakoutGameAdapter(() -> returnFromGame("breakout")));
         games.put("invaders", new SpaceInvadersGameAdapter(() -> returnFromGame("invaders")));
     }

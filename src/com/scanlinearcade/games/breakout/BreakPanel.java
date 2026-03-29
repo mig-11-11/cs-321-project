@@ -68,6 +68,7 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	private boolean leftPressed;
 	private boolean rightPressed;
 	private boolean paused;
+	private boolean showingInstructionsCard;
 	private boolean gameOverDialogShown;
 	private final Runnable returnToHubAction;
 	private int clearedBoards;
@@ -104,6 +105,7 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 		resetRound();
 		running = true;
 		paused = false;
+		showingInstructionsCard = false;
 		gameOverDialogShown = false;
 		if (timer != null && !timer.isRunning()) {
 			timer.start();
@@ -231,8 +233,18 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 		if (!running) {
 			drawCenteredText(g2, "Game Over", PANEL_HEIGHT / 2 - 10, 28);
 		} else if (paused) {
-			drawCenteredText(g2, "Paused", PANEL_HEIGHT / 2 - 10, 28);
-			drawCenteredText(g2, "Press [Space] to Resume", PANEL_HEIGHT / 2 + 20, 16);
+			if (showingInstructionsCard) {
+				drawCenteredText(g2, "Breakout Instructions", PANEL_HEIGHT / 2 - 60, 24);
+				drawCenteredText(g2, "Break all bricks and do not let the ball fall.", PANEL_HEIGHT / 2 - 20, 16);
+				drawCenteredText(g2, "Move: [A/D] or [Left/Right]", PANEL_HEIGHT / 2 + 8, 16);
+				drawCenteredText(g2, "Pause: [Space]", PANEL_HEIGHT / 2 + 34, 16);
+				drawCenteredText(g2, "Press any button to start Breakout", PANEL_HEIGHT / 2 + 76, 16);
+				drawCenteredText(g2, "Press [M] to return to the main menu", PANEL_HEIGHT / 2 + 102, 16);
+			} else {
+				drawCenteredText(g2, "Paused", PANEL_HEIGHT / 2 - 10, 28);
+				drawCenteredText(g2, "[Space] Resume   [R] Restart", PANEL_HEIGHT / 2 + 20, 16);
+				drawCenteredText(g2, "[M] Return to Main Menu   [I] Instructions", PANEL_HEIGHT / 2 + 46, 16);
+			}
 		}
 	}
 
@@ -276,12 +288,43 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 			if (paused) {
 				leftPressed = false;
 				rightPressed = false;
+				showingInstructionsCard = false;
+			} else {
+				showingInstructionsCard = false;
 			}
 			repaint();
 			return;
 		}
 
 		if (paused) {
+			if (showingInstructionsCard) {
+				if (e.getKeyCode() == KeyEvent.VK_M) {
+					returnToHubFromDialog();
+					return;
+				}
+
+				paused = false;
+				showingInstructionsCard = false;
+				repaint();
+				return;
+			}
+
+			if (e.getKeyCode() == KeyEvent.VK_I) {
+				showingInstructionsCard = !showingInstructionsCard;
+				repaint();
+				return;
+			}
+
+			if (e.getKeyCode() == KeyEvent.VK_M) {
+				returnToHubFromDialog();
+				return;
+			}
+
+			if (e.getKeyCode() == KeyEvent.VK_R) {
+				restartFromDialog();
+				return;
+			}
+
 			return;
 		}
 
@@ -326,6 +369,44 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
             timer.stop();
         }
     }
+
+	public void resetGame()
+	{
+		if (timer.isRunning())
+		{
+			timer.stop();
+		}
+
+		ball = null;
+		score = new BreakoutScore(3);
+		clearedBoards = 0;
+		currentRunToken = UUID.randomUUID().toString();
+
+		running = true;
+		paused = false;
+		showingInstructionsCard = false;
+		leftPressed = false;
+		rightPressed = false;
+		gameOverDialogShown = false;
+
+		spawnFreshBoard();
+		resetRound();
+		repaint();
+	}
+
+	public void showInstructionsCard()
+	{
+		if (!running)
+		{
+			return;
+		}
+
+		paused = true;
+		leftPressed = false;
+		rightPressed = false;
+		showingInstructionsCard = true;
+		repaint();
+	}
 
 
 }

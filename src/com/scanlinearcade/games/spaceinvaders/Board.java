@@ -13,6 +13,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -47,6 +48,8 @@ public class Board extends JPanel {
     private Timer timer;
     private final Runnable returnToHubAction;
     private boolean gameOverDialogShown;
+    private boolean paused;
+    private boolean showingInstructionsCard;
     private String currentRunToken;
 
     /**
@@ -103,6 +106,8 @@ public class Board extends JPanel {
         deaths = 0;
         direction = -1;
         inGame = true;
+        paused = false;
+        showingInstructionsCard = false;
         message = "Game Over";
         gameOverDialogShown = false;
         currentRunToken = UUID.randomUUID().toString();
@@ -202,6 +207,10 @@ public class Board extends JPanel {
             drawShot(g);
             drawBombing(g);
 
+            if (paused) {
+                drawPauseOverlay(g);
+            }
+
         } else {
 
             if (timer.isRunning()) {
@@ -246,6 +255,10 @@ public class Board extends JPanel {
      * updates the board for enemies, player, and shots
      */
     private void update() {
+
+        if (paused) {
+            return;
+        }
 
         if (deaths == Commons.NUMBER_OF_ALIENS_TO_DESTROY) {
 
@@ -449,18 +462,63 @@ public class Board extends JPanel {
         @Override
         public void keyReleased(KeyEvent e) {
 
+            if (paused) {
+                return;
+            }
+
             player.keyReleased(e);
         }
 
         @Override
         public void keyPressed(KeyEvent e) {
 
+            int key = e.getKeyCode();
+
+            if (paused && showingInstructionsCard) {
+                if (key == KeyEvent.VK_M) {
+                    returnToHubFromDialog();
+                    return;
+                }
+
+                paused = false;
+                showingInstructionsCard = false;
+                repaint();
+                return;
+            }
+
+            if (key == KeyEvent.VK_P && inGame) {
+                paused = !paused;
+                if (!paused) {
+                    showingInstructionsCard = false;
+                }
+                repaint();
+                return;
+            }
+
+            if (key == KeyEvent.VK_I && paused) {
+                showingInstructionsCard = !showingInstructionsCard;
+                repaint();
+                return;
+            }
+
+            if (key == KeyEvent.VK_M && paused) {
+                returnToHubFromDialog();
+                return;
+            }
+
+            if (key == KeyEvent.VK_R && paused) {
+                restartFromDialog();
+                return;
+            }
+
+            if (paused) {
+                return;
+            }
+
             player.keyPressed(e);
 
             int x = player.getX();
             int y = player.getY();
-
-            int key = e.getKeyCode();
 
             if (key == KeyEvent.VK_SPACE) {
 
@@ -473,6 +531,38 @@ public class Board extends JPanel {
                 }
             }
         }
+    }
+
+    private void drawPauseOverlay(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g;
+        g2.setColor(new Color(0, 0, 0, 185));
+        g2.fillRect(20, 20, Commons.BOARD_WIDTH - 40, Commons.BOARD_HEIGHT - 40);
+
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("Monospaced", Font.BOLD, 24));
+
+        if (showingInstructionsCard) {
+            drawCenteredLine(g2, "Space Invaders Instructions", 90);
+            g2.setFont(new Font("Monospaced", Font.PLAIN, 14));
+            drawCenteredLine(g2, "Destroy all aliens before they reach the ground.", 135);
+            drawCenteredLine(g2, "Move: [Left/Right]", 175);
+            drawCenteredLine(g2, "Shoot: [Space]", 205);
+            drawCenteredLine(g2, "Pause: [P]", 235);
+            drawCenteredLine(g2, "Press any button to start Space Invaders", 280);
+            drawCenteredLine(g2, "Press [M] to return to the main menu", 305);
+        } else {
+            g2.drawString("Paused", 260, 90);
+            g2.setFont(new Font("Monospaced", Font.PLAIN, 14));
+            g2.drawString("[P] Resume", 255, 145);
+            g2.drawString("[R] Restart", 250, 175);
+            g2.drawString("[M] Return to Main Menu", 190, 205);
+            g2.drawString("[I] Instructions", 220, 235);
+        }
+    }
+
+    private void drawCenteredLine(Graphics2D g2, String text, int y) {
+        int x = (Commons.BOARD_WIDTH - g2.getFontMetrics().stringWidth(text)) / 2;
+        g2.drawString(text, x, y);
     }
     
    public void resetGame()
@@ -498,6 +588,18 @@ public void stopGameLoop()
         timer.stop();
     }
 } 
+
+public void showInstructionsCard()
+{
+    if (!inGame)
+    {
+        return;
+    }
+
+    paused = true;
+    showingInstructionsCard = true;
+    repaint();
+}
     
    
     

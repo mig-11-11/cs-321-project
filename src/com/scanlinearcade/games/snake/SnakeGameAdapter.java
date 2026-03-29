@@ -10,10 +10,16 @@ import javax.swing.JComponent;
 public class SnakeGameAdapter implements ArcadeGame
 {
     private final SnakePanel panel;
+    private boolean firstEntryInstructionsPending = true;
 
     public SnakeGameAdapter()
     {
-        panel = new SnakePanel();
+        this(null);
+    }
+
+    public SnakeGameAdapter(Runnable returnToHubAction)
+    {
+        panel = new SnakePanel(returnToHubAction);
     }
 
     @Override
@@ -43,6 +49,12 @@ public class SnakeGameAdapter implements ArcadeGame
     @Override
     public void startGameLoop()
     {
+        if (firstEntryInstructionsPending)
+        {
+            panel.showInstructionsCard();
+            firstEntryInstructionsPending = false;
+        }
+
         panel.startGameLoop();
     }
 

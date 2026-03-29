@@ -63,6 +63,8 @@ public class SnakePanel extends JPanel {
     private final Timer timer;
     private final Runnable returnToHubAction;
     private boolean gameOverDialogShown;
+    private boolean paused;
+    private boolean showingInstructionsCard;
     private String currentRunToken;
 
     public SnakePanel() 
@@ -89,12 +91,17 @@ public class SnakePanel extends JPanel {
         this.returnToHubAction = returnToHubAction;
         this.currentRunToken = UUID.randomUUID().toString();
         this.gameOverDialogShown = false;
+        this.paused = false;
+        this.showingInstructionsCard = false;
 
         // Game loop, updates the model then repaints the panel
        
         timer = new Timer(FPS_MS,e -> 
         {
-            model.step();
+            if (!paused)
+            {
+                model.step();
+            }
             
             if(model.isGameOver() && !gameOverDialogShown) 
             {
@@ -110,6 +117,20 @@ public class SnakePanel extends JPanel {
         {
             @Override
             public void keyPressed(KeyEvent e) {
+                if (paused && showingInstructionsCard)
+                {
+                    if (e.getKeyCode() == KeyEvent.VK_M)
+                    {
+                        returnToHubFromDialog();
+                        return;
+                    }
+
+                    paused = false;
+                    showingInstructionsCard = false;
+                    repaint();
+                    return;
+                }
+
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_UP, KeyEvent.VK_W -> model.setDirection(Direction.UP);
                     case KeyEvent.VK_DOWN, KeyEvent.VK_S -> model.setDirection(Direction.DOWN);
@@ -118,12 +139,16 @@ public class SnakePanel extends JPanel {
 
                     case KeyEvent.VK_R -> model.reset(); // restart
                     case KeyEvent.VK_SPACE -> togglePause();
+                    case KeyEvent.VK_I -> toggleInstructionsCard();
+                    case KeyEvent.VK_M -> returnToHubFromDialog();
                     default -> { }
                 }
 
                 if (e.getKeyCode() == KeyEvent.VK_R) {
                     gameOverDialogShown = false;
                     currentRunToken = UUID.randomUUID().toString();
+                    paused = false;
+                    showingInstructionsCard = false;
                     if (!timer.isRunning()) {
                         timer.start();
                     }
@@ -148,6 +173,8 @@ public class SnakePanel extends JPanel {
         model.reset();
         gameOverDialogShown = false;
         currentRunToken = UUID.randomUUID().toString();
+        paused = false;
+        showingInstructionsCard = false;
         if (!timer.isRunning()) {
             timer.start();
         }
@@ -177,9 +204,34 @@ public class SnakePanel extends JPanel {
 
     private void togglePause() 
     {
-        if (timer.isRunning()) timer.stop();
-        else timer.start();
+        if (model.isGameOver())
+        {
+            return;
+        }
+
+        paused = !paused;
+        if (!paused)
+        {
+            showingInstructionsCard = false;
+        }
         repaint();
+    }
+
+    private void toggleInstructionsCard()
+    {
+        if (!paused)
+        {
+            return;
+        }
+
+        showingInstructionsCard = !showingInstructionsCard;
+        repaint();
+    }
+
+    private void drawCenteredLine(Graphics2D g2, String text, int y)
+    {
+        int x = (COLS * CELL - g2.getFontMetrics().stringWidth(text)) / 2;
+        g2.drawString(text, x, y);
     }
 
   
@@ -247,7 +299,37 @@ public class SnakePanel extends JPanel {
 
         g2.setColor(Color.WHITE);
         g2.setFont(new Font("Consolas", Font.PLAIN, 16));
-        g2.drawString("Score: " + model.getScore() + "   [Space]=Pause  [R]=Restart", 10, boardH + 25);
+        g2.drawString("Score: " + model.getScore() + "   [Space]=Pause  [R]=Restart  [M]=Menu", 10, boardH + 25);
+
+        if (paused)
+        {
+            g2.setColor(new Color(0, 0, 0, 190));
+            g2.fillRect(30, 40, boardW - 60, boardH - 80);
+
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font("Consolas", Font.BOLD, 26));
+
+            if (showingInstructionsCard)
+            {
+                drawCenteredLine(g2, "Snake Instructions", 90);
+                g2.setFont(new Font("Consolas", Font.PLAIN, 16));
+                drawCenteredLine(g2, "Eat food to grow and increase score.", 140);
+                drawCenteredLine(g2, "Avoid walls and your own body.", 170);
+                drawCenteredLine(g2, "Move: [W/A/S/D] or [Arrow Keys]", 220);
+                drawCenteredLine(g2, "Pause/Resume: [Space]", 250);
+                drawCenteredLine(g2, "Press any button to start Snake", 300);
+                drawCenteredLine(g2, "Press [M] to return to the main menu", 330);
+            }
+            else
+            {
+                g2.drawString("Paused", 320, 90);
+                g2.setFont(new Font("Consolas", Font.PLAIN, 16));
+                g2.drawString("[Space] Resume", 280, 160);
+                g2.drawString("[R] Restart", 290, 190);
+                g2.drawString("[M] Return to Main Menu", 220, 220);
+                g2.drawString("[I] Instructions", 250, 250);
+            }
+        }
 
         g2.dispose();
     }
@@ -278,6 +360,20 @@ public class SnakePanel extends JPanel {
         model.reset();
         gameOverDialogShown = false;
         currentRunToken = UUID.randomUUID().toString();
+        paused = false;
+        showingInstructionsCard = false;
+        repaint();
+    }
+
+    public void showInstructionsCard()
+    {
+        if (model.isGameOver())
+        {
+            return;
+        }
+
+        paused = true;
+        showingInstructionsCard = true;
         repaint();
     }
     

@@ -7,6 +7,8 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Window;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
@@ -31,6 +33,7 @@ public final class GameOverDialog extends JDialog {
     private final JTextField nameField;
     private final JButton saveButton;
     private boolean scoreSaved;
+    private boolean closeHandled;
 
     private GameOverDialog(
             Window owner,
@@ -85,22 +88,10 @@ public final class GameOverDialog extends JDialog {
         });
 
         JButton restartButton = new JButton("Restart");
-        restartButton.addActionListener(e -> {
-            saveScoreIfNeeded();
-            dispose();
-            if (onRestart != null) {
-                onRestart.run();
-            }
-        });
+        restartButton.addActionListener(e -> closeWithAction(onRestart));
 
         JButton hubButton = new JButton("Return To Main Hub");
-        hubButton.addActionListener(e -> {
-            saveScoreIfNeeded();
-            dispose();
-            if (onReturnToHub != null) {
-                onReturnToHub.run();
-            }
-        });
+        hubButton.addActionListener(e -> closeWithAction(onReturnToHub));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttons.add(saveButton);
@@ -116,9 +107,17 @@ public final class GameOverDialog extends JDialog {
         add(buttons, BorderLayout.SOUTH);
 
         setResizable(false);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         pack();
         setLocationRelativeTo(owner);
         getRootPane().setDefaultButton(saveButton);
+
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeWithAction(onReturnToHub);
+            }
+        });
 
         if (HighScoreStore.isRunAlreadySaved(gameKey, runToken)) {
             scoreSaved = true;
@@ -161,9 +160,14 @@ public final class GameOverDialog extends JDialog {
             return;
         }
 
+        String enteredName = nameField.getText();
+        if (enteredName == null || enteredName.isBlank()) {
+            return;
+        }
+
         scoreSaved = HighScoreStore.submitScore(
                 gameKey,
-                nameField.getText(),
+                enteredName,
                 score,
                 HighScoreStore.DEFAULT_MAX_ENTRIES,
                 runToken
@@ -171,6 +175,20 @@ public final class GameOverDialog extends JDialog {
         if (scoreSaved) {
             saveButton.setEnabled(false);
             nameField.setEnabled(false);
+        }
+    }
+
+    private void closeWithAction(Runnable action) {
+        if (closeHandled) {
+            return;
+        }
+
+        closeHandled = true;
+        saveScoreIfNeeded();
+        dispose();
+
+        if (action != null) {
+            action.run();
         }
     }
 }
