@@ -11,6 +11,7 @@ package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeFrame;
 import com.scanlinearcade.app.GameOverDialog;
+import java.awt.*;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -56,8 +57,25 @@ import javax.swing.Timer;
  * - Add pausing functionality (variable isPaused)
  */
 public class BreakPanel extends JPanel implements ActionListener, KeyListener {
-	public static final int PANEL_WIDTH = 800;
-	public static final int PANEL_HEIGHT = 600;
+public static final int PANEL_WIDTH = 800;
+public static final int BOARD_HEIGHT = 552;
+public static final int HUD_HEIGHT = 48;
+public static final int PANEL_HEIGHT = BOARD_HEIGHT + HUD_HEIGHT;
+
+// HUD colors
+private static final Color HUD_BG = new Color(58, 58, 62);
+private static final Color HUD_TEXT = new Color(235, 235, 235);
+private static final Color HUD_ACCENT = new Color(0, 255, 200);
+
+// Border color
+private static final Color BOARD_BORDER = new Color(0, 255, 200, 170);
+
+// Instruction card colors
+private static final Color INSTRUCTION_DIM = new Color(0, 0, 0, 110);
+private static final Color INSTRUCTION_BOX_BG = new Color(10, 16, 30, 220);
+private static final Color INSTRUCTION_BOX_BORDER = new Color(0, 255, 200, 120);
+private static final Color INSTRUCTION_TITLE = new Color(230, 245, 255);
+private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 
 	private Ball ball;
 	private Paddle paddle;
@@ -120,14 +138,14 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 * Resets round-specific objects (paddle and ball) after life loss or game start.
 	 * Signature: {@code private void resetRound()}
 	 */
-	private void resetRound() {
-		paddle = new Paddle(PANEL_WIDTH / 2 - 45, PANEL_HEIGHT - 40, 90, 12);
-		if (ball == null) {
-			ball = new Ball(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, 8);
-			return;
-		}
-		ball.reset(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, false);
-	}
+        private void resetRound() {
+            paddle = new Paddle(PANEL_WIDTH / 2 - 45, BOARD_HEIGHT - 40, 90, 12);
+            if (ball == null) {
+                ball = new Ball(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, 8);
+                return;
+            }
+            ball.reset(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, false);
+        }
 
 	private void advanceToNextBoard() {
 		clearedBoards++;
@@ -145,7 +163,7 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (running && !paused) {
-			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, BOARD_HEIGHT);
 			paddle.update(leftPressed, rightPressed, bounds);
 
 			boolean lost = ball.update(bounds, paddle, bricks, score);
@@ -220,33 +238,126 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 *
 	 * @param g graphics context
 	 */
-	@Override
-	protected void paintComponent(Graphics g) {
-		super.paintComponent(g);
-		Graphics2D g2 = (Graphics2D) g;
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
 
-		bricks.draw(g2);
-		paddle.draw(g2);
-		ball.draw(g2);
-		score.draw(g2, PANEL_WIDTH);
+            Graphics2D g2 = (Graphics2D) g.create();
 
-		if (!running) {
-			drawCenteredText(g2, "Game Over", PANEL_HEIGHT / 2 - 10, 28);
-		} else if (paused) {
-			if (showingInstructionsCard) {
-				drawCenteredText(g2, "Breakout Instructions", PANEL_HEIGHT / 2 - 60, 24);
-				drawCenteredText(g2, "Break all bricks and do not let the ball fall.", PANEL_HEIGHT / 2 - 20, 16);
-				drawCenteredText(g2, "Move: [A/D] or [Left/Right]", PANEL_HEIGHT / 2 + 8, 16);
-				drawCenteredText(g2, "Pause: [Space]", PANEL_HEIGHT / 2 + 34, 16);
-				drawCenteredText(g2, "Press any button to start Breakout", PANEL_HEIGHT / 2 + 76, 16);
-				drawCenteredText(g2, "Press [M] to return to the main menu", PANEL_HEIGHT / 2 + 102, 16);
-			} else {
-				drawCenteredText(g2, "Paused", PANEL_HEIGHT / 2 - 10, 28);
-				drawCenteredText(g2, "[Space] Resume   [R] Restart", PANEL_HEIGHT / 2 + 20, 16);
-				drawCenteredText(g2, "[M] Return to Main Menu   [I] Instructions", PANEL_HEIGHT / 2 + 46, 16);
-			}
-		}
-	}
+            // Logical dimensions
+            final int logicalBoardW = PANEL_WIDTH;
+            final int logicalBoardH = BOARD_HEIGHT;
+            final int logicalTotalH = PANEL_HEIGHT;
+
+            // Actual panel size
+            int panelW = getWidth();
+            int panelH = getHeight();
+
+            // Uniform scale to fit while preserving aspect ratio
+            double scaleX = (double) panelW / logicalBoardW;
+            double scaleY = (double) panelH / logicalTotalH;
+            double scale = Math.min(scaleX, scaleY);
+
+            // Center the scaled game
+            int drawW = (int) Math.round(logicalBoardW * scale);
+            int drawH = (int) Math.round(logicalTotalH * scale);
+            int offsetX = (panelW - drawW) / 2;
+            int offsetY = (panelH - drawH) / 2;
+
+            // Outer background
+            g2.setColor(Color.BLACK);
+            g2.fillRect(0, 0, panelW, panelH);
+
+            // Move / scale into logical space
+            g2.translate(offsetX, offsetY);
+            g2.scale(scale, scale);
+
+            // Board background
+            g2.setColor(Color.BLACK);
+            g2.fillRect(0, 0, logicalBoardW, logicalBoardH);
+
+            // Visible wall border
+            g2.setColor(BOARD_BORDER);
+            g2.drawRect(0, 0, logicalBoardW - 1, logicalBoardH - 1);
+
+            // Draw gameplay
+            bricks.draw(g2);
+            paddle.draw(g2);
+            ball.draw(g2);
+
+            // HUD bar
+            g2.setColor(HUD_BG);
+            g2.fillRect(0, logicalBoardH, logicalBoardW, HUD_HEIGHT);
+
+            g2.setFont(new Font("Consolas", Font.PLAIN, 16));
+            FontMetrics fm = g2.getFontMetrics();
+            int hudBaseline = logicalBoardH + ((HUD_HEIGHT - fm.getHeight()) / 2) + fm.getAscent();
+
+            String pauseText = "[Esc] Pause Menu";
+            String instructionsText = "[I] Instructions";
+            String rightText = "Score: " + score.getScore() + "   Lives: " + score.getLives();
+
+            // Left
+            g2.setColor(HUD_TEXT);
+            g2.drawString(pauseText, 10, hudBaseline);
+
+            // Center
+            int instructionsX = (logicalBoardW - fm.stringWidth(instructionsText)) / 2;
+            g2.setColor(HUD_TEXT);
+            g2.drawString(instructionsText, instructionsX, hudBaseline);
+
+            // Right
+            int rightX = logicalBoardW - fm.stringWidth(rightText) - 10;
+            g2.setColor(HUD_TEXT);
+            g2.drawString(rightText, rightX, hudBaseline);
+
+            // Instructions overlay
+            if (showingInstructionsCard) {
+                int boxX = 48;
+                int boxY = 42;
+                int boxW = logicalBoardW - 96;
+                int boxH = logicalBoardH - 84;
+
+                // Dim background
+                g2.setColor(INSTRUCTION_DIM);
+                g2.fillRoundRect(boxX + 8, boxY + 8, boxW, boxH, 28, 28);
+
+                // Main card
+                g2.setColor(INSTRUCTION_BOX_BG);
+                g2.fillRoundRect(boxX, boxY, boxW, boxH, 28, 28);
+
+                // Border
+                g2.setColor(INSTRUCTION_BOX_BORDER);
+                g2.drawRoundRect(boxX, boxY, boxW, boxH, 28, 28);
+
+                // Title
+                g2.setColor(INSTRUCTION_TITLE);
+                g2.setFont(new Font("Consolas", Font.BOLD, 28));
+                drawCenteredLine(g2, "Breakout Instructions", boxY + 48);
+
+                // Body
+                g2.setColor(INSTRUCTION_TEXT);
+                g2.setFont(new Font("Consolas", Font.PLAIN, 15));
+                drawCenteredLine(g2, "Break all bricks and do not let the ball fall.", boxY + 100);
+                drawCenteredLine(g2, "Move: [A/D] or [Left/Right]", boxY + 144);
+                drawCenteredLine(g2, "Pause Menu: [Esc]", boxY + 188);
+                drawCenteredLine(g2, "Instructions: [I]", boxY + 220);
+                drawCenteredLine(g2, "Press any key to start / continue", boxY + 280);
+                drawCenteredLine(g2, "Press [M] to return to the main menu", boxY + 312);
+            }
+
+            // Optional simple paused fallback text
+            if (paused && !showingInstructionsCard) {
+                drawCenteredText(g2, "Paused", logicalBoardH / 2 - 8, 28);
+                drawCenteredText(g2, "Press [Esc] for the Pause Menu", logicalBoardH / 2 + 24, 16);
+            }
+
+            if (!running) {
+                drawCenteredText(g2, "Game Over", logicalBoardH / 2 - 10, 28);
+            }
+
+            g2.dispose();
+        }
 
 	/**
 	 * Draws horizontally centered text on the panel.
@@ -281,60 +392,93 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 *
 	 * @param e key event
 	 */
-	@Override
-	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_SPACE && running) {
-			paused = !paused;
-			if (paused) {
-				leftPressed = false;
-				rightPressed = false;
-				showingInstructionsCard = false;
-			} else {
-				showingInstructionsCard = false;
-			}
-			repaint();
-			return;
-		}
+        @Override
+        public void keyPressed(KeyEvent e) 
+        {
+            // Open instructions at any time during gameplay, just like Snake
+            if (e.getKeyCode() == KeyEvent.VK_I && running)
+            {
+                showInstructionsCard();
+                return;
+            }
 
-		if (paused) {
-			if (showingInstructionsCard) {
-				if (e.getKeyCode() == KeyEvent.VK_M) {
-					returnToHubFromDialog();
-					return;
-				}
+            // Old space pause logic, if you still want to keep it
+            if (e.getKeyCode() == KeyEvent.VK_SPACE && running) 
+            {
+                paused = !paused;
+                if (paused) 
+                {
+                    leftPressed = false;
+                    rightPressed = false;
+                    showingInstructionsCard = false;
+                } 
+                else 
+                {
+                    showingInstructionsCard = false;
+                }
+                repaint();
+                return;
+            }
 
-				paused = false;
-				showingInstructionsCard = false;
-				repaint();
-				return;
-			}
+            if (paused) 
+            {
+                if (showingInstructionsCard) 
+                {
+                    if (e.getKeyCode() == KeyEvent.VK_M) 
+                    {
+                        returnToHubFromDialog();
+                        return;
+                    }
 
-			if (e.getKeyCode() == KeyEvent.VK_I) {
-				showingInstructionsCard = !showingInstructionsCard;
-				repaint();
-				return;
-			}
+                    paused = false;
+                    showingInstructionsCard = false;
+                    repaint();
+                    return;
+                }
 
-			if (e.getKeyCode() == KeyEvent.VK_M) {
-				returnToHubFromDialog();
-				return;
-			}
+                if (e.getKeyCode() == KeyEvent.VK_M) 
+                {
+                    returnToHubFromDialog();
+                    return;
+                }
 
-			if (e.getKeyCode() == KeyEvent.VK_R) {
-				restartFromDialog();
-				return;
-			}
+                if (e.getKeyCode() == KeyEvent.VK_R) 
+                {
+                    restartFromDialog();
+                    return;
+                }
 
-			return;
-		}
+                return;
+            }
 
-		if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
-			leftPressed = true;
-		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			rightPressed = true;
-		}
-	}
+            if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) 
+            {
+                leftPressed = true;
+            } 
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) 
+            {
+                rightPressed = true;
+            }
+        }
+        
+        
+        
+            private void drawCenteredLine(Graphics2D g2, String text, int y) 
+            {
+                int x = (PANEL_WIDTH - g2.getFontMetrics().stringWidth(text)) / 2;
+                g2.drawString(text, x, y);
+            }
+            
+            public boolean isShowingInstructionsCard() 
+            {
+                return showingInstructionsCard;
+            }
 
+            
+            
+            
+            
+            
 	/**
 	 * Handles key release state for paddle movement.
 	 * Signature: {@code public void keyReleased(KeyEvent e)}
