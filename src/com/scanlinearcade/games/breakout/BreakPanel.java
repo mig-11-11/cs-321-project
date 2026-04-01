@@ -10,7 +10,6 @@
 package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeFrame;
-import com.scanlinearcade.app.GameOverDialog;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -56,6 +55,11 @@ import javax.swing.Timer;
  * - Add pausing functionality (variable isPaused)
  */
 public class BreakPanel extends JPanel implements ActionListener, KeyListener {
+	@FunctionalInterface
+	public interface GameOverHandler {
+		void onGameOver(String resultText, int score, String runToken);
+	}
+
 	public static final int PANEL_WIDTH = 800;
 	public static final int PANEL_HEIGHT = 600;
 
@@ -69,8 +73,10 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	private boolean rightPressed;
 	private boolean paused;
 	private boolean showingInstructionsCard;
-	private boolean gameOverDialogShown;
+	private long suppressPauseUntilMs;
+	private boolean gameOverOverlayShown;
 	private final Runnable returnToHubAction;
+	private final GameOverHandler gameOverHandler;
 	private int clearedBoards;
 	private String currentRunToken;
 
@@ -79,15 +85,20 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 * Signature: {@code public BreakPanel()}
 	 */
 	public BreakPanel() {
-		this(null);
+		this(null, null);
 	}
 
 	public BreakPanel(Runnable returnToHubAction) {
+		this(returnToHubAction, null);
+	}
+
+	public BreakPanel(Runnable returnToHubAction, GameOverHandler gameOverHandler) {
 		setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
 		setBackground(Color.BLACK);
 		setFocusable(true);
 		addKeyListener(this);
 		this.returnToHubAction = returnToHubAction;
+		this.gameOverHandler = gameOverHandler;
 
 		timer = new Timer(16, this);
 		initGame();
@@ -106,7 +117,8 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 		running = true;
 		paused = false;
 		showingInstructionsCard = false;
-		gameOverDialogShown = false;
+		suppressPauseUntilMs = 0L;
+		gameOverOverlayShown = false;
 		if (timer != null && !timer.isRunning()) {
 			timer.start();
 		}
@@ -162,32 +174,16 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 				advanceToNextBoard();
 			}
 
-			if (!running && !gameOverDialogShown) {
-				gameOverDialogShown = true;
+			if (!running && !gameOverOverlayShown) {
+				gameOverOverlayShown = true;
 				timer.stop();
 				boolean won = bricks.isCleared();
-				SwingUtilities.invokeLater(() -> showSharedGameOverMenu(won));
+				if (gameOverHandler != null) {
+					String resultText = won ? "You Win!" : "Game Over";
+					gameOverHandler.onGameOver(resultText, score.getScore(), currentRunToken);
+				}
 			}
 		}
-		repaint();
-	}
-
-	private void showSharedGameOverMenu(boolean won) {
-		String resultText = won ? "You Win!" : "Game Over";
-		GameOverDialog.showDialog(
-				this,
-				"breakout",
-				currentRunToken,
-				resultText,
-				score.getScore(),
-				this::restartFromDialog,
-				this::returnToHubFromDialog
-		);
-	}
-
-	private void restartFromDialog() {
-		initGame();
-		requestFocusInWindow();
 		repaint();
 	}
 
@@ -232,19 +228,13 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 
 		if (!running) {
 			drawCenteredText(g2, "Game Over", PANEL_HEIGHT / 2 - 10, 28);
-		} else if (paused) {
-			if (showingInstructionsCard) {
-				drawCenteredText(g2, "Breakout Instructions", PANEL_HEIGHT / 2 - 60, 24);
-				drawCenteredText(g2, "Break all bricks and do not let the ball fall.", PANEL_HEIGHT / 2 - 20, 16);
-				drawCenteredText(g2, "Move: [A/D] or [Left/Right]", PANEL_HEIGHT / 2 + 8, 16);
-				drawCenteredText(g2, "Pause: [Space]", PANEL_HEIGHT / 2 + 34, 16);
-				drawCenteredText(g2, "Press any button to start Breakout", PANEL_HEIGHT / 2 + 76, 16);
-				drawCenteredText(g2, "Press [M] to return to the main menu", PANEL_HEIGHT / 2 + 102, 16);
-			} else {
-				drawCenteredText(g2, "Paused", PANEL_HEIGHT / 2 - 10, 28);
-				drawCenteredText(g2, "[Space] Resume   [R] Restart", PANEL_HEIGHT / 2 + 20, 16);
-				drawCenteredText(g2, "[M] Return to Main Menu   [I] Instructions", PANEL_HEIGHT / 2 + 46, 16);
-			}
+		} else if (paused && showingInstructionsCard) {
+			drawCenteredText(g2, "Breakout Instructions", PANEL_HEIGHT / 2 - 60, 24);
+			drawCenteredText(g2, "Break all bricks and do not let the ball fall.", PANEL_HEIGHT / 2 - 20, 16);
+			drawCenteredText(g2, "Move: [A/D] or [Left/Right]", PANEL_HEIGHT / 2 + 8, 16);
+			drawCenteredText(g2, "Pause: [Space]", PANEL_HEIGHT / 2 + 34, 16);
+			drawCenteredText(g2, "Press any button to start Breakout", PANEL_HEIGHT / 2 + 76, 16);
+			drawCenteredText(g2, "Press [M] to return to the main menu", PANEL_HEIGHT / 2 + 102, 16);
 		}
 	}
 
@@ -283,48 +273,20 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 	 */
 	@Override
 	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_SPACE && running) {
-			paused = !paused;
-			if (paused) {
-				leftPressed = false;
-				rightPressed = false;
-				showingInstructionsCard = false;
-			} else {
-				showingInstructionsCard = false;
-			}
-			repaint();
-			return;
-		}
-
-		if (paused) {
-			if (showingInstructionsCard) {
-				if (e.getKeyCode() == KeyEvent.VK_M) {
-					returnToHubFromDialog();
-					return;
-				}
-
-				paused = false;
-				showingInstructionsCard = false;
-				repaint();
-				return;
-			}
-
-			if (e.getKeyCode() == KeyEvent.VK_I) {
-				showingInstructionsCard = !showingInstructionsCard;
-				repaint();
-				return;
-			}
-
+		if (paused && showingInstructionsCard) {
 			if (e.getKeyCode() == KeyEvent.VK_M) {
 				returnToHubFromDialog();
 				return;
 			}
 
-			if (e.getKeyCode() == KeyEvent.VK_R) {
-				restartFromDialog();
-				return;
-			}
+			paused = false;
+			showingInstructionsCard = false;
+			suppressPauseUntilMs = System.currentTimeMillis() + 200L;
+			repaint();
+			return;
+		}
 
+		if (paused) {
 			return;
 		}
 
@@ -385,9 +347,10 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 		running = true;
 		paused = false;
 		showingInstructionsCard = false;
+		suppressPauseUntilMs = 0L;
 		leftPressed = false;
 		rightPressed = false;
-		gameOverDialogShown = false;
+		gameOverOverlayShown = false;
 
 		spawnFreshBoard();
 		resetRound();
@@ -406,6 +369,16 @@ public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 		rightPressed = false;
 		showingInstructionsCard = true;
 		repaint();
+	}
+
+	public boolean isShowingInstructionsCard()
+	{
+		return showingInstructionsCard;
+	}
+
+	public boolean shouldSuppressPauseToggle()
+	{
+		return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
 	}
 
 

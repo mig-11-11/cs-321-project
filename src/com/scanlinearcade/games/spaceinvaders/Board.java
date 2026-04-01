@@ -1,10 +1,6 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeFrame;
-import com.scanlinearcade.app.GameOverDialog;
-//import com.zetcode.sprite.Alien;
-//import com.zetcode.sprite.Player;
-//import com.zetcode.sprite.Shot;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -33,6 +29,11 @@ import javax.swing.SwingUtilities;
  */
 public class Board extends JPanel {
 
+    @FunctionalInterface
+    public interface GameOverHandler {
+        void onGameOver(String resultText, int score, String runToken);
+    }
+
     private Dimension d;
     private List<Alien> aliens;
     private Player player;
@@ -47,22 +48,30 @@ public class Board extends JPanel {
 
     private Timer timer;
     private final Runnable returnToHubAction;
-    private boolean gameOverDialogShown;
+    private final GameOverHandler gameOverHandler;
+    private boolean gameOverOverlayShown;
     private boolean paused;
     private boolean showingInstructionsCard;
+    private long suppressPauseUntilMs;
     private String currentRunToken;
 
     /**
      * runs board and sets game components on board
      */
     public Board() {
-        this(null);
+        this(null, null);
     }
 
     public Board(Runnable returnToHubAction) 
     {
+        this(returnToHubAction, null);
+    }
+
+    public Board(Runnable returnToHubAction, GameOverHandler gameOverHandler)
+    {
 
         this.returnToHubAction = returnToHubAction;
+        this.gameOverHandler = gameOverHandler;
 
         initBoard();
         
@@ -108,8 +117,9 @@ public class Board extends JPanel {
         inGame = true;
         paused = false;
         showingInstructionsCard = false;
+        suppressPauseUntilMs = 0L;
         message = "Game Over";
-        gameOverDialogShown = false;
+        gameOverOverlayShown = false;
         currentRunToken = UUID.randomUUID().toString();
     }
 
@@ -207,7 +217,7 @@ public class Board extends JPanel {
             drawShot(g);
             drawBombing(g);
 
-            if (paused) {
+            if (paused && showingInstructionsCard) {
                 drawPauseOverlay(g);
             }
 
@@ -217,9 +227,11 @@ public class Board extends JPanel {
                 timer.stop();
             }
 
-            if (!gameOverDialogShown) {
-                gameOverDialogShown = true;
-                SwingUtilities.invokeLater(this::showSharedGameOverMenu);
+            if (!gameOverOverlayShown) {
+                gameOverOverlayShown = true;
+                if (gameOverHandler != null) {
+                    gameOverHandler.onGameOver(message, deaths * 10, currentRunToken);
+                }
             }
 
             gameOver(g);
@@ -413,24 +425,6 @@ public class Board extends JPanel {
         repaint();
     }
 
-    private void showSharedGameOverMenu() {
-        GameOverDialog.showDialog(
-                this,
-                "spaceinvaders",
-            currentRunToken,
-                message,
-                deaths * 10,
-                this::restartFromDialog,
-                this::returnToHubFromDialog
-        );
-    }
-
-    private void restartFromDialog() 
-    {
-        resetGame();
-        startGameLoop();
-    }
-
     private void returnToHubFromDialog() {
         if (returnToHubAction != null) {
             returnToHubAction.run();
@@ -482,32 +476,8 @@ public class Board extends JPanel {
 
                 paused = false;
                 showingInstructionsCard = false;
+                suppressPauseUntilMs = System.currentTimeMillis() + 200L;
                 repaint();
-                return;
-            }
-
-            if (key == KeyEvent.VK_P && inGame) {
-                paused = !paused;
-                if (!paused) {
-                    showingInstructionsCard = false;
-                }
-                repaint();
-                return;
-            }
-
-            if (key == KeyEvent.VK_I && paused) {
-                showingInstructionsCard = !showingInstructionsCard;
-                repaint();
-                return;
-            }
-
-            if (key == KeyEvent.VK_M && paused) {
-                returnToHubFromDialog();
-                return;
-            }
-
-            if (key == KeyEvent.VK_R && paused) {
-                restartFromDialog();
                 return;
             }
 
@@ -550,13 +520,6 @@ public class Board extends JPanel {
             drawCenteredLine(g2, "Pause: [P]", 235);
             drawCenteredLine(g2, "Press any button to start Space Invaders", 280);
             drawCenteredLine(g2, "Press [M] to return to the main menu", 305);
-        } else {
-            g2.drawString("Paused", 260, 90);
-            g2.setFont(new Font("Monospaced", Font.PLAIN, 14));
-            g2.drawString("[P] Resume", 255, 145);
-            g2.drawString("[R] Restart", 250, 175);
-            g2.drawString("[M] Return to Main Menu", 190, 205);
-            g2.drawString("[I] Instructions", 220, 235);
         }
     }
 
@@ -599,6 +562,16 @@ public void showInstructionsCard()
     paused = true;
     showingInstructionsCard = true;
     repaint();
+}
+
+public boolean isShowingInstructionsCard()
+{
+    return showingInstructionsCard;
+}
+
+public boolean shouldSuppressPauseToggle()
+{
+    return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
 }
     
    
