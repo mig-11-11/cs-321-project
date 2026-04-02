@@ -1,6 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -8,8 +9,10 @@ import javax.swing.Timer;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -29,12 +32,23 @@ import javax.swing.SwingUtilities;
  */
 public class Board extends JPanel {
 
-    @FunctionalInterface
-    public interface GameOverHandler {
-        void onGameOver(String resultText, int score, String runToken);
-    }
+    private static final int HUD_HEIGHT = 48;
+    private static final int TOTAL_HEIGHT = Commons.BOARD_HEIGHT + HUD_HEIGHT;
 
-    private Dimension d;
+    // HUD colors
+    private static final Color HUD_BG = new Color(58, 58, 62);
+    private static final Color HUD_TEXT = new Color(235, 235, 235);
+
+    // Border color
+    private static final Color BOARD_BORDER = new Color(0, 255, 200, 170);
+
+    // Instruction card colors
+    private static final Color INSTRUCTION_DIM = new Color(0, 0, 0, 110);
+    private static final Color INSTRUCTION_BOX_BG = new Color(10, 16, 30, 220);
+    private static final Color INSTRUCTION_BOX_BORDER = new Color(0, 255, 200, 120);
+    private static final Color INSTRUCTION_TITLE = new Color(230, 245, 255);
+    private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
+
     private List<Alien> aliens;
     private Player player;
     private Shot shot;
@@ -84,12 +98,11 @@ public class Board extends JPanel {
 
         addKeyListener(new TAdapter());
         setFocusable(true);
-        d = new Dimension(Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+        setPreferredSize(new Dimension(Commons.BOARD_WIDTH, TOTAL_HEIGHT));
         setBackground(Color.black);
 
         timer = new Timer(Commons.DELAY, new GameCycle());
        
-
         gameInit();
     }
 
@@ -194,7 +207,34 @@ public class Board extends JPanel {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        doDrawing(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        int logicalBoardW = Commons.BOARD_WIDTH;
+        int logicalBoardH = Commons.BOARD_HEIGHT;
+        int logicalTotalH = TOTAL_HEIGHT;
+
+        int panelW = getWidth();
+        int panelH = getHeight();
+
+        double scaleX = (double) panelW / logicalBoardW;
+        double scaleY = (double) panelH / logicalTotalH;
+        double scale = Math.min(scaleX, scaleY) * 0.90;
+
+        int drawW = (int) Math.round(logicalBoardW * scale);
+        int drawH = (int) Math.round(logicalTotalH * scale);
+        int offsetX = (panelW - drawW) / 2;
+        int offsetY = (panelH - drawH) / 2;
+
+        g2.setColor(Color.BLACK);
+        g2.fillRect(0, 0, panelW, panelH);
+
+        g2.translate(offsetX, offsetY);
+        g2.scale(scale, scale);
+
+        doDrawing(g2);
+
+        g2.dispose();
     }
 
     /**
@@ -203,25 +243,28 @@ public class Board extends JPanel {
      */
     private void doDrawing(Graphics g) {
 
-        g.setColor(Color.black);
-        g.fillRect(0, 0, d.width, d.height);
-        g.setColor(Color.green);
+        Graphics2D g2 = (Graphics2D) g;
+
+        g2.setColor(Color.black);
+        g2.fillRect(0, 0, Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+
+        // visible border around the board
+        g2.setColor(BOARD_BORDER);
+        g2.drawRect(0, 0, Commons.BOARD_WIDTH - 1, Commons.BOARD_HEIGHT - 1);
+
+        g2.setColor(Color.green);
 
         if (inGame) {
 
-            g.drawLine(0, Commons.GROUND,
+            g2.drawLine(0, Commons.GROUND,
                     Commons.BOARD_WIDTH, Commons.GROUND);
 
-            drawAliens(g);
-            drawPlayer(g);
-            drawShot(g);
-            drawBombing(g);
+            drawAliens(g2);
+            drawPlayer(g2);
+            drawShot(g2);
+            drawBombing(g2);
 
-            if (paused && showingInstructionsCard) {
-                drawPauseOverlay(g);
-            }
-
-        } else {
+            } else {
 
             if (timer.isRunning()) {
                 timer.stop();
@@ -233,35 +276,17 @@ public class Board extends JPanel {
                     gameOverHandler.onGameOver(message, deaths * 10, currentRunToken);
                 }
             }
+        }
 
-            gameOver(g);
+        drawHud(g2);
+
+        if (showingInstructionsCard) {
+            drawInstructionsOverlay(g2);
         }
 
         Toolkit.getDefaultToolkit().sync();
     }
 
-    /**
-     * displays the game over screen when player loses
-     * @param g 
-     */
-    private void gameOver(Graphics g) {
-
-        g.setColor(Color.black);
-        g.fillRect(0, 0, Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
-
-        g.setColor(new Color(0, 32, 48));
-        g.fillRect(50, Commons.BOARD_WIDTH / 2 - 30, Commons.BOARD_WIDTH - 100, 50);
-        g.setColor(Color.white);
-        g.drawRect(50, Commons.BOARD_WIDTH / 2 - 30, Commons.BOARD_WIDTH - 100, 50);
-
-        var small = new Font("Helvetica", Font.BOLD, 14);
-        var fontMetrics = this.getFontMetrics(small);
-
-        g.setColor(Color.white);
-        g.setFont(small);
-        g.drawString(message, (Commons.BOARD_WIDTH - fontMetrics.stringWidth(message)) / 2,
-                Commons.BOARD_WIDTH / 2);
-    }
 
     /**
      * updates the board for enemies, player, and shots
@@ -425,6 +450,24 @@ public class Board extends JPanel {
         repaint();
     }
 
+    private void showSharedGameOverMenu() {
+        GameOverDialog.showDialog(
+                this,
+                "spaceinvaders",
+                currentRunToken,
+                message,
+                deaths * 10,
+                this::restartFromDialog,
+                this::returnToHubFromDialog
+        );
+    }
+
+    private void restartFromDialog() 
+    {
+        resetGame();
+        startGameLoop();
+    }
+
     private void returnToHubFromDialog() {
         if (returnToHubAction != null) {
             returnToHubAction.run();
@@ -468,7 +511,7 @@ public class Board extends JPanel {
 
             int key = e.getKeyCode();
 
-            if (paused && showingInstructionsCard) {
+            if (showingInstructionsCard) {
                 if (key == KeyEvent.VK_M) {
                     returnToHubFromDialog();
                     return;
@@ -478,6 +521,11 @@ public class Board extends JPanel {
                 showingInstructionsCard = false;
                 suppressPauseUntilMs = System.currentTimeMillis() + 200L;
                 repaint();
+                return;
+            }
+
+            if (key == KeyEvent.VK_I && inGame) {
+                showInstructionsCard();
                 return;
             }
 
@@ -503,24 +551,58 @@ public class Board extends JPanel {
         }
     }
 
-    private void drawPauseOverlay(Graphics g) {
-        Graphics2D g2 = (Graphics2D) g;
-        g2.setColor(new Color(0, 0, 0, 185));
-        g2.fillRect(20, 20, Commons.BOARD_WIDTH - 40, Commons.BOARD_HEIGHT - 40);
+    private void drawHud(Graphics2D g2) {
 
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Monospaced", Font.BOLD, 24));
+        g2.setColor(HUD_BG);
+        g2.fillRect(0, Commons.BOARD_HEIGHT, Commons.BOARD_WIDTH, HUD_HEIGHT);
 
-        if (showingInstructionsCard) {
-            drawCenteredLine(g2, "Space Invaders Instructions", 90);
-            g2.setFont(new Font("Monospaced", Font.PLAIN, 14));
-            drawCenteredLine(g2, "Destroy all aliens before they reach the ground.", 135);
-            drawCenteredLine(g2, "Move: [Left/Right]", 175);
-            drawCenteredLine(g2, "Shoot: [Space]", 205);
-            drawCenteredLine(g2, "Pause: [P]", 235);
-            drawCenteredLine(g2, "Press any button to start Space Invaders", 280);
-            drawCenteredLine(g2, "Press [M] to return to the main menu", 305);
-        }
+        g2.setFont(new Font("Consolas", Font.PLAIN, 10));
+        FontMetrics fm = g2.getFontMetrics();
+        int hudBaseline = Commons.BOARD_HEIGHT + ((HUD_HEIGHT - fm.getHeight()) / 2) + fm.getAscent();
+
+        String pauseText = "[Esc] Pause Menu";
+        String instructionsText = "[I] Instructions";
+        String scoreText = "Score: " + (deaths * 10);
+
+        g2.setColor(HUD_TEXT);
+        g2.drawString(pauseText, 8, hudBaseline);
+
+        int instructionsX = (Commons.BOARD_WIDTH - fm.stringWidth(instructionsText)) / 2;
+        g2.drawString(instructionsText, instructionsX, hudBaseline);
+
+        int scoreX = Commons.BOARD_WIDTH - fm.stringWidth(scoreText) - 8;
+        g2.drawString(scoreText, scoreX, hudBaseline);
+    }
+
+    private void drawInstructionsOverlay(Graphics2D g2) {
+
+        int boxX = 24;
+        int boxY = 20;
+        int boxW = Commons.BOARD_WIDTH - 48;
+        int boxH = Commons.BOARD_HEIGHT - 40;
+
+        g2.setColor(INSTRUCTION_DIM);
+        g2.fillRoundRect(boxX + 6, boxY + 6, boxW, boxH, 24, 24);
+
+        g2.setColor(INSTRUCTION_BOX_BG);
+        g2.fillRoundRect(boxX, boxY, boxW, boxH, 24, 24);
+
+        g2.setColor(INSTRUCTION_BOX_BORDER);
+        g2.drawRoundRect(boxX, boxY, boxW, boxH, 24, 24);
+
+        g2.setColor(INSTRUCTION_TITLE);
+        g2.setFont(new Font("Consolas", Font.BOLD, 13));
+        drawCenteredLine(g2, "Space Invaders Instructions", boxY + 28);
+
+        g2.setColor(INSTRUCTION_TEXT);
+        g2.setFont(new Font("Consolas", Font.PLAIN, 8));
+        drawCenteredLine(g2, "Destroy all aliens before they reach the ground.", boxY + 72);
+        drawCenteredLine(g2, "Move: [Left/Right]", boxY + 104);
+        drawCenteredLine(g2, "Shoot: [Space]", boxY + 130);
+        drawCenteredLine(g2, "Pause Menu: [Esc]", boxY + 156);
+        drawCenteredLine(g2, "Instructions: [I]", boxY + 182);
+        drawCenteredLine(g2, "Press any key to start / continue", boxY + 230);
+        drawCenteredLine(g2, "Press [M] to return to the main menu", boxY + 256);
     }
 
     private void drawCenteredLine(Graphics2D g2, String text, int y) {
@@ -528,52 +610,45 @@ public class Board extends JPanel {
         g2.drawString(text, x, y);
     }
     
-   public void resetGame()
-{
-    gameInit();
-    repaint();
-}
-
-public void startGameLoop()
-{
-    if (!timer.isRunning())
+    public void resetGame()
     {
-        timer.start();
+        gameInit();
+        repaint();
     }
 
-    requestFocusInWindow();
-}
-
-public void stopGameLoop()
-{
-    if (timer.isRunning())
+    public void startGameLoop()
     {
-        timer.stop();
-    }
-} 
+        if (!timer.isRunning())
+        {
+            timer.start();
+        }
 
-public void showInstructionsCard()
-{
-    if (!inGame)
-    {
-        return;
+        requestFocusInWindow();
     }
 
-    paused = true;
-    showingInstructionsCard = true;
-    repaint();
-}
+    public void stopGameLoop()
+    {
+        if (timer.isRunning())
+        {
+            timer.stop();
+        }
+    } 
 
-public boolean isShowingInstructionsCard()
-{
-    return showingInstructionsCard;
-}
+    public void showInstructionsCard()
+    {
+        if (!inGame)
+        {
+            return;
+        }
 
-public boolean shouldSuppressPauseToggle()
-{
-    return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
-}
-    
-   
+        paused = true;
+        showingInstructionsCard = true;
+        repaint();
+    }
+
+    public boolean isShowingInstructionsCard()
+    {
+        return showingInstructionsCard;
+    }
     
 }

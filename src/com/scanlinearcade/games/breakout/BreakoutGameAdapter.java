@@ -5,25 +5,25 @@
 package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeGame;
-import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.HierarchyEvent;
 
 
 public class BreakoutGameAdapter implements ArcadeGame
 {
     private final BreakPanel panel;
+
+    private boolean firstEntryInstructionsPending = true;
+
     private final JLayeredPane layeredPane;
     private PausePanel pausePanel = null;
-    private GameOverPanel gameOverPanel = null;
-    private boolean firstEntryInstructionsPending = true;
+
 
     public BreakoutGameAdapter(Runnable onExitToMenu)
     {
-        panel = new BreakPanel(() -> exitToMenu(onExitToMenu), this::showGameOverOverlay);
+        panel = new BreakPanel(onExitToMenu);
         
         //Makes game controls still work
         panel.addHierarchyListener(e -> {
@@ -45,11 +45,6 @@ public class BreakoutGameAdapter implements ArcadeGame
 
                 panel.setBounds(0, 0, w, h);
                 pausePanel.setBounds(0, 0, w, h);
-
-                if (gameOverPanel != null)
-                {
-                    gameOverPanel.setBounds(0, 0, w, h);
-                }
             }
         });
 
@@ -60,12 +55,18 @@ public class BreakoutGameAdapter implements ArcadeGame
         pausePanel = new PausePanel(
 
             // Resume
-            this::hidePauseOverlay,
+            () -> {
+                pausePanel.setVisible(false);
+                startGameLoop();
+                panel.requestFocusInWindow();
+            },
 
             // Restart
             () -> {
                 resetGame();
-                hidePauseOverlay();
+                pausePanel.setVisible(false);
+                startGameLoop();
+                panel.requestFocusInWindow();
             },
 
             // Main Menu
@@ -73,106 +74,50 @@ public class BreakoutGameAdapter implements ArcadeGame
                 pausePanel.setVisible(false);
                 stopGameLoop();
                 resetGame();
-                onExitToMenu.run(); // 👈 tells ArcadeFrame to switch
+                onExitToMenu.run(); // tells ArcadeFrame to switch
             }
         );
 
         pausePanel.setVisible(false);
         layeredPane.add(pausePanel, Integer.valueOf(1));
 
-        gameOverPanel = new GameOverPanel(
-            "breakout",
-            () -> {
-                gameOverPanel.setVisible(false);
-                resetGame();
-                startGameLoop();
-                panel.requestFocusInWindow();
-            },
-            () -> {
-                gameOverPanel.setVisible(false);
-                exitToMenu(onExitToMenu);
-            }
-        );
-        gameOverPanel.setVisible(false);
-        layeredPane.add(gameOverPanel, Integer.valueOf(2));
-
         setupPauseKey();
     }
 
-    private void setupPauseKey()
-    {
-        layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-            .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
-        layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-            .put(KeyStroke.getKeyStroke("SPACE"), "pause");
 
-        layeredPane.getActionMap().put("pause", new AbstractAction()
+        private void setupPauseKey()
         {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e)
+            layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
+
+            layeredPane.getActionMap().put("pause", new AbstractAction()
             {
-                togglePauseOverlay();
-            }
-        });
-    }
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (pausePanel.isVisible())
+                    {
+                        return;
+                    }
 
-    private void togglePauseOverlay()
-    {
-        if (gameOverPanel.isVisible())
-        {
-            return;
+                    if (panel.isShowingInstructionsCard())
+                    {
+                        return;
+                    }
+
+                    pausePanel.setVisible(true);
+                    stopGameLoop();
+                }
+            });
         }
 
-        if (panel.shouldSuppressPauseToggle())
-        {
-            return;
-        }
-
-        if (pausePanel.isVisible())
-        {
-            hidePauseOverlay();
-            return;
-        }
-
-        showPauseOverlay();
-    }
-
-    private void showPauseOverlay()
-    {
-        pausePanel.setBounds(0, 0, layeredPane.getWidth(), layeredPane.getHeight());
-        pausePanel.setVisible(true);
-        stopGameLoop();
-        SwingUtilities.invokeLater(() -> pausePanel.requestFocusInWindow());
-    }
-
-    private void showGameOverOverlay(String resultText, int score, String runToken)
-    {
-        pausePanel.setVisible(false);
-        gameOverPanel.setBounds(0, 0, layeredPane.getWidth(), layeredPane.getHeight());
-        gameOverPanel.showResult(resultText, score, runToken);
-        SwingUtilities.invokeLater(() -> gameOverPanel.requestFocusInWindow());
-    }
-
-    private void hidePauseOverlay()
-    {
-        pausePanel.setVisible(false);
-        startGameLoop();
-        panel.requestFocusInWindow();
-    }
-
-    private void exitToMenu(Runnable onExitToMenu)
-    {
-        pausePanel.setVisible(false);
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.setVisible(false);
-        }
-
-        stopGameLoop();
-        resetGame();
-        onExitToMenu.run();
-    }
-
+    
+    
+    
+    
+    
+    
+    
     @Override
     public String getCardName()
     {
@@ -194,9 +139,9 @@ public class BreakoutGameAdapter implements ArcadeGame
     @Override
     public void resetGame()
     {
-          pausePanel.setVisible(false);
-          gameOverPanel.setVisible(false);
+
           panel.resetGame();
+
     }
 
     @Override

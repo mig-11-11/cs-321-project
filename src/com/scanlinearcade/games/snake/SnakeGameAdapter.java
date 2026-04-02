@@ -5,27 +5,30 @@
 package com.scanlinearcade.games.snake;
 
 import com.scanlinearcade.app.ArcadeGame;
-import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.PausePanel;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.AbstractAction;
+import javax.swing.JComponent;
+import javax.swing.JLayeredPane;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import java.awt.event.HierarchyEvent;
-
 
 public class SnakeGameAdapter implements ArcadeGame
 {
     private final SnakePanel panel;
     private final JLayeredPane layeredPane;
-    private PausePanel pausePanel = null;
-    private GameOverPanel gameOverPanel = null;
+    private final PausePanel pausePanel;
+    private final Runnable returnToHubAction;
+
     private boolean firstEntryInstructionsPending = true;
 
-    public SnakeGameAdapter(Runnable onExitToMenu)
+    private void setupPauseKey()
     {
-        panel = new SnakePanel(() -> exitToMenu(onExitToMenu), this::showGameOverOverlay);
-        
-        //Makes game controls still work
+        this.returnToHubAction = returnToHubAction;
+
+        panel = new SnakePanel(returnToHubAction);
+
         panel.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && panel.isShowing())
             {
@@ -33,144 +36,94 @@ public class SnakeGameAdapter implements ArcadeGame
             }
         });
 
-        // Create layered container
         layeredPane = new JLayeredPane();
-        layeredPane.setLayout(null); // IMPORTANT for manual positioning
+        layeredPane.setLayout(null);
 
-        layeredPane.addComponentListener(new java.awt.event.ComponentAdapter() {
+        pausePanel = new PausePanel(
+            this::resumeFromPause,
+            this::restartFromPause,
+            this::returnToMenuFromPause
+        );
+
+        pausePanel.setVisible(false);
+
+        layeredPane.addComponentListener(new java.awt.event.ComponentAdapter()
+        {
             @Override
-            public void componentResized(java.awt.event.ComponentEvent e) {
+            public void componentResized(java.awt.event.ComponentEvent e)
+            {
                 int w = layeredPane.getWidth();
                 int h = layeredPane.getHeight();
 
                 panel.setBounds(0, 0, w, h);
                 pausePanel.setBounds(0, 0, w, h);
-
-                if (gameOverPanel != null)
-                {
-                    gameOverPanel.setBounds(0, 0, w, h);
-                }
             }
         });
 
-        // Game panel
         layeredPane.add(panel, Integer.valueOf(0));
-
-        // ⏸️ Pause panel
-        pausePanel = new PausePanel(
-
-            // Resume
-            this::hidePauseOverlay,
-
-            // Restart
-            () -> {
-                resetGame();
-                hidePauseOverlay();
-            },
-
-            // Main Menu
-            () -> {
-                pausePanel.setVisible(false);
-                stopGameLoop();
-                resetGame();
-                onExitToMenu.run(); // 👈 tells ArcadeFrame to switch
-            }
-        );
-
-        pausePanel.setVisible(false);
         layeredPane.add(pausePanel, Integer.valueOf(1));
 
-        gameOverPanel = new GameOverPanel(
-            "snake",
-            () -> {
-                gameOverPanel.setVisible(false);
-                resetGame();
-                startGameLoop();
-                panel.requestFocusInWindow();
-            },
-            () -> {
-                gameOverPanel.setVisible(false);
-                exitToMenu(onExitToMenu);
-            }
-        );
-        gameOverPanel.setVisible(false);
-        layeredPane.add(gameOverPanel, Integer.valueOf(2));
-
         setupPauseKey();
+    }
+
+    private void resumeFromPause()
+    {
+        pausePanel.setVisible(false);
+        panel.startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void restartFromPause()
+    {
+        panel.resetGame();
+        pausePanel.setVisible(false);
+
+        if (firstEntryInstructionsPending)
+        {
+            panel.showInstructionsCard();
+            firstEntryInstructionsPending = false;
+        }
+
+        panel.startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void returnToMenuFromPause()
+    {
+        pausePanel.setVisible(false);
+        panel.stopGameLoop();
+        panel.resetGame();
+
+        if (returnToHubAction != null)
+        {
+            returnToHubAction.run();
+        }
     }
 
     private void setupPauseKey()
     {
         layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-            .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
-        layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-            .put(KeyStroke.getKeyStroke("SPACE"), "pause");
+                   .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
 
         layeredPane.getActionMap().put("pause", new AbstractAction()
         {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e)
             {
-                togglePauseOverlay();
+                if (pausePanel.isVisible())
+                {
+                    return;
+                }
+
+                if (panel.isShowingInstructionsCard())
+                {
+                    return;
+                }
+
+                pausePanel.setVisible(true);
+                panel.stopGameLoop();
             }
         });
-    }
-
-    private void togglePauseOverlay()
-    {
-        if (gameOverPanel.isVisible())
-        {
-            return;
-        }
-
-        if (panel.shouldSuppressPauseToggle())
-        {
-            return;
-        }
-
-        if (pausePanel.isVisible())
-        {
-            hidePauseOverlay();
-            return;
-        }
-
-        showPauseOverlay();
-    }
-
-    private void showPauseOverlay()
-    {
-        pausePanel.setBounds(0, 0, layeredPane.getWidth(), layeredPane.getHeight());
-        pausePanel.setVisible(true);
-        stopGameLoop();
-        SwingUtilities.invokeLater(() -> pausePanel.requestFocusInWindow());
-    }
-
-    private void showGameOverOverlay(String resultText, int score, String runToken)
-    {
-        pausePanel.setVisible(false);
-        gameOverPanel.setBounds(0, 0, layeredPane.getWidth(), layeredPane.getHeight());
-        gameOverPanel.showResult(resultText, score, runToken);
-        SwingUtilities.invokeLater(() -> gameOverPanel.requestFocusInWindow());
-    }
-
-    private void hidePauseOverlay()
-    {
-        pausePanel.setVisible(false);
-        startGameLoop();
-        panel.requestFocusInWindow();
-    }
-
-    private void exitToMenu(Runnable onExitToMenu)
-    {
-        pausePanel.setVisible(false);
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.setVisible(false);
-        }
-
-        stopGameLoop();
-        resetGame();
-        onExitToMenu.run();
     }
 
     @Override
@@ -197,6 +150,7 @@ public class SnakeGameAdapter implements ArcadeGame
         pausePanel.setVisible(false);
         gameOverPanel.setVisible(false);
         panel.resetGame();
+        pausePanel.setVisible(false);
     }
 
     @Override
@@ -208,7 +162,9 @@ public class SnakeGameAdapter implements ArcadeGame
             firstEntryInstructionsPending = false;
         }
 
+        pausePanel.setVisible(false);
         panel.startGameLoop();
+        panel.requestFocusInWindow();
     }
 
     @Override
