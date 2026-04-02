@@ -70,7 +70,6 @@ public class SnakePanel extends JPanel {
     private boolean gameOverOverlayShown;
     private boolean paused;
     private boolean showingInstructionsCard;
-    private boolean firstEntryInstructionsPending;
     private long suppressPauseUntilMs;
     private String currentRunToken;
 
@@ -91,12 +90,7 @@ public class SnakePanel extends JPanel {
     
     
     
-    public SnakePanel(Runnable returnToHubAction)
-    {
-        this(returnToHubAction, null);
-    }
-
-    public SnakePanel(Runnable returnToHubAction, GameOverHandler gameOverHandler) 
+    public SnakePanel(Runnable returnToHubAction) 
     {
         setBackground(Color.WHITE);
         setFocusable(true);
@@ -106,7 +100,6 @@ public class SnakePanel extends JPanel {
         this.gameOverOverlayShown = false;
         this.paused = false;
         this.showingInstructionsCard = false;
-        this.firstEntryInstructionsPending = true;
         this.suppressPauseUntilMs = 0L;
 
         // Game loop, updates the model then repaints the panel
@@ -125,7 +118,7 @@ public class SnakePanel extends JPanel {
 
                 if (this.gameOverHandler != null)
                 {
-                    this.gameOverHandler.onGameOver("Game Over!", model.getScore(), currentRunToken);
+                    this.gameOverHandler.onGameOver("Game Over", model.getScore(), currentRunToken);
                 }
             }
             repaint();
@@ -136,7 +129,7 @@ public class SnakePanel extends JPanel {
         {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (showingInstructionsCard)
+                if (paused && showingInstructionsCard)
                 {
                     if (e.getKeyCode() == KeyEvent.VK_M)
                     {
@@ -146,12 +139,7 @@ public class SnakePanel extends JPanel {
 
                     paused = false;
                     showingInstructionsCard = false;
-                    firstEntryInstructionsPending = false;
                     suppressPauseUntilMs = System.currentTimeMillis() + 200L;
-                    if (!timer.isRunning())
-                    {
-                        timer.start();
-                    }
                     repaint();
                     return;
                 }
@@ -375,6 +363,13 @@ public class SnakePanel extends JPanel {
     g2.dispose();
 }
 
+public boolean isShowingInstructionsCard()
+{
+    return showingInstructionsCard;
+}
+    
+   
+   
     public void startGameLoop()
     {
         if(!timer.isRunning())
@@ -413,14 +408,6 @@ public class SnakePanel extends JPanel {
         paused = true;
         showingInstructionsCard = true;
         repaint();
-    }
-
-    public void showFirstEntryInstructionsIfPending()
-    {
-        if (firstEntryInstructionsPending)
-        {
-            showInstructionsCard();
-        }
     }
 
     public boolean isShowingInstructionsCard()

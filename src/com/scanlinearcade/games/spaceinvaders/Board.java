@@ -1,6 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameOverDialog;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -29,11 +30,6 @@ import javax.swing.SwingUtilities;
  */
 public class Board extends JPanel {
 
-    @FunctionalInterface
-    public interface GameOverHandler {
-        void onGameOver(String resultText, int score, String runToken);
-    }
-
     private static final int HUD_HEIGHT = 48;
     private static final int TOTAL_HEIGHT = Commons.BOARD_HEIGHT + HUD_HEIGHT;
 
@@ -60,7 +56,7 @@ public class Board extends JPanel {
 
     private boolean inGame = true;
     private String explImg = "src/com/scanlinearcade/games/images/explosion.png";
-    private String message = "Game Over!";
+    private String message = "Game Over";
 
     private Timer timer;
     private final Runnable returnToHubAction;
@@ -68,7 +64,6 @@ public class Board extends JPanel {
     private boolean gameOverOverlayShown;
     private boolean paused;
     private boolean showingInstructionsCard;
-    private boolean firstEntryInstructionsPending;
     private long suppressPauseUntilMs;
     private String currentRunToken;
 
@@ -134,9 +129,8 @@ public class Board extends JPanel {
         inGame = true;
         paused = false;
         showingInstructionsCard = false;
-        firstEntryInstructionsPending = true;
         suppressPauseUntilMs = 0L;
-        message = "Game Over!";
+        message = "Game Over";
         gameOverOverlayShown = false;
         currentRunToken = UUID.randomUUID().toString();
     }
@@ -443,6 +437,18 @@ public class Board extends JPanel {
         repaint();
     }
 
+    private void showSharedGameOverMenu() {
+        GameOverDialog.showDialog(
+                this,
+                "spaceinvaders",
+                currentRunToken,
+                message,
+                deaths * 10,
+                this::restartFromDialog,
+                this::returnToHubFromDialog
+        );
+    }
+
     private void restartFromDialog() 
     {
         resetGame();
@@ -500,11 +506,7 @@ public class Board extends JPanel {
 
                 paused = false;
                 showingInstructionsCard = false;
-                firstEntryInstructionsPending = false;
                 suppressPauseUntilMs = System.currentTimeMillis() + 200L;
-                if (!timer.isRunning()) {
-                    timer.start();
-                }
                 repaint();
                 return;
             }
@@ -639,22 +641,9 @@ public void showInstructionsCard()
         repaint();
     }
 
-    public void showFirstEntryInstructionsIfPending()
-    {
-        if (firstEntryInstructionsPending)
-        {
-            showInstructionsCard();
-        }
-    }
-
     public boolean isShowingInstructionsCard()
     {
         return showingInstructionsCard;
-    }
-
-    public boolean shouldSuppressPauseToggle()
-    {
-        return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
     }
     
 }
