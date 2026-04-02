@@ -5,6 +5,7 @@
 package com.scanlinearcade.games.snake;
 
 import com.scanlinearcade.app.ArcadeGame;
+import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.AbstractAction;
@@ -19,15 +20,14 @@ public class SnakeGameAdapter implements ArcadeGame
     private final SnakePanel panel;
     private final JLayeredPane layeredPane;
     private final PausePanel pausePanel;
+    private final GameOverPanel gameOverPanel;
     private final Runnable returnToHubAction;
 
-    private boolean firstEntryInstructionsPending = true;
-
-    private void setupPauseKey()
+    public SnakeGameAdapter(Runnable returnToHubAction)
     {
         this.returnToHubAction = returnToHubAction;
 
-        panel = new SnakePanel(returnToHubAction);
+        panel = new SnakePanel(returnToHubAction, this::showGameOver);
 
         panel.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && panel.isShowing())
@@ -42,7 +42,14 @@ public class SnakeGameAdapter implements ArcadeGame
         pausePanel = new PausePanel(
             this::resumeFromPause,
             this::restartFromPause,
+            this::showInstructionsFromPause,
             this::returnToMenuFromPause
+        );
+
+        gameOverPanel = new GameOverPanel(
+            "snake",
+            this::restartFromGameOver,
+            this::returnToMenuFromGameOver
         );
 
         pausePanel.setVisible(false);
@@ -57,11 +64,13 @@ public class SnakeGameAdapter implements ArcadeGame
 
                 panel.setBounds(0, 0, w, h);
                 pausePanel.setBounds(0, 0, w, h);
+                gameOverPanel.setBounds(0, 0, w, h);
             }
         });
 
         layeredPane.add(panel, Integer.valueOf(0));
         layeredPane.add(pausePanel, Integer.valueOf(1));
+        layeredPane.add(gameOverPanel, Integer.valueOf(2));
 
         setupPauseKey();
     }
@@ -78,11 +87,7 @@ public class SnakeGameAdapter implements ArcadeGame
         panel.resetGame();
         pausePanel.setVisible(false);
 
-        if (firstEntryInstructionsPending)
-        {
-            panel.showInstructionsCard();
-            firstEntryInstructionsPending = false;
-        }
+        panel.showFirstEntryInstructionsIfPending();
 
         panel.startGameLoop();
         panel.requestFocusInWindow();
@@ -91,6 +96,40 @@ public class SnakeGameAdapter implements ArcadeGame
     private void returnToMenuFromPause()
     {
         pausePanel.setVisible(false);
+        panel.stopGameLoop();
+        panel.resetGame();
+
+        if (returnToHubAction != null)
+        {
+            returnToHubAction.run();
+        }
+    }
+
+    private void showInstructionsFromPause()
+    {
+        pausePanel.setVisible(false);
+        panel.showInstructionsCard();
+        panel.requestFocusInWindow();
+    }
+
+    private void showGameOver(String resultText, int score, String runToken)
+    {
+        pausePanel.setVisible(false);
+        gameOverPanel.showResult(resultText, score, runToken);
+    }
+
+    private void restartFromGameOver()
+    {
+        gameOverPanel.setVisible(false);
+        panel.resetGame();
+        panel.showFirstEntryInstructionsIfPending();
+        panel.startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void returnToMenuFromGameOver()
+    {
+        gameOverPanel.setVisible(false);
         panel.stopGameLoop();
         panel.resetGame();
 
@@ -115,7 +154,17 @@ public class SnakeGameAdapter implements ArcadeGame
                     return;
                 }
 
+                if (gameOverPanel.isVisible())
+                {
+                    return;
+                }
+
                 if (panel.isShowingInstructionsCard())
+                {
+                    return;
+                }
+
+                if (panel.shouldSuppressPauseToggle())
                 {
                     return;
                 }
@@ -150,17 +199,13 @@ public class SnakeGameAdapter implements ArcadeGame
         pausePanel.setVisible(false);
         gameOverPanel.setVisible(false);
         panel.resetGame();
-        pausePanel.setVisible(false);
     }
 
     @Override
     public void startGameLoop()
     {
-        if (firstEntryInstructionsPending)
-        {
-            panel.showInstructionsCard();
-            firstEntryInstructionsPending = false;
-        }
+        gameOverPanel.setVisible(false);
+        panel.showFirstEntryInstructionsIfPending();
 
         pausePanel.setVisible(false);
         panel.startGameLoop();

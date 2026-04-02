@@ -1,6 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeGame;
+import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.AbstractAction;
@@ -15,15 +16,14 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     private final Board panel;
     private final JLayeredPane layeredPane;
     private final PausePanel pausePanel;
+    private final GameOverPanel gameOverPanel;
     private final Runnable onExitToMenu;
-
-    private boolean firstEntryInstructionsPending = true;
 
     public SpaceInvadersGameAdapter(Runnable onExitToMenu)
     {
         this.onExitToMenu = onExitToMenu;
 
-        panel = new Board(onExitToMenu);
+        panel = new Board(onExitToMenu, this::showGameOver);
 
         panel.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && panel.isShowing())
@@ -38,7 +38,14 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         pausePanel = new PausePanel(
             this::resumeFromPause,
             this::restartFromPause,
+            this::showInstructionsFromPause,
             this::returnToMenuFromPause
+        );
+
+        gameOverPanel = new GameOverPanel(
+            "invaders",
+            this::restartFromGameOver,
+            this::returnToMenuFromGameOver
         );
 
         pausePanel.setVisible(false);
@@ -52,11 +59,13 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
 
                 panel.setBounds(0, 0, w, h);
                 pausePanel.setBounds(0, 0, w, h);
+                gameOverPanel.setBounds(0, 0, w, h);
             }
         });
 
         layeredPane.add(panel, Integer.valueOf(0));
         layeredPane.add(pausePanel, Integer.valueOf(1));
+        layeredPane.add(gameOverPanel, Integer.valueOf(2));
 
         setupPauseKey();
     }
@@ -88,12 +97,43 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         }
     }
 
+    private void showInstructionsFromPause()
+    {
+        pausePanel.setVisible(false);
+        panel.showInstructionsCard();
+        panel.requestFocusInWindow();
+    }
+
+    private void showGameOver(String resultText, int score, String runToken)
+    {
+        pausePanel.setVisible(false);
+        gameOverPanel.showResult(resultText, score, runToken);
+    }
+
+    private void restartFromGameOver()
+    {
+        gameOverPanel.setVisible(false);
+        panel.resetGame();
+        panel.showFirstEntryInstructionsIfPending();
+        panel.startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void returnToMenuFromGameOver()
+    {
+        gameOverPanel.setVisible(false);
+        panel.stopGameLoop();
+        panel.resetGame();
+
+        if (onExitToMenu != null)
+        {
+            onExitToMenu.run();
+        }
+    }
+
     private void setupPauseKey()
     {
-        layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                   .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
-
-        layeredPane.getActionMap().put("pause", new AbstractAction()
+        AbstractAction pauseAction = new AbstractAction()
         {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e)
@@ -103,7 +143,17 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
                     return;
                 }
 
+                if (gameOverPanel.isVisible())
+                {
+                    return;
+                }
+
                 if (panel.isShowingInstructionsCard())
+                {
+                    return;
+                }
+
+                if (panel.shouldSuppressPauseToggle())
                 {
                     return;
                 }
@@ -111,7 +161,15 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
                 pausePanel.setVisible(true);
                 panel.stopGameLoop();
             }
-        });
+        };
+
+        layeredPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                   .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
+        layeredPane.getActionMap().put("pause", pauseAction);
+
+        panel.getInputMap(JComponent.WHEN_FOCUSED)
+             .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
+        panel.getActionMap().put("pause", pauseAction);
     }
 
     @Override
@@ -135,6 +193,7 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     @Override
     public void resetGame()
     {
+        gameOverPanel.setVisible(false);
         panel.resetGame();
         pausePanel.setVisible(false);
     }
@@ -142,11 +201,8 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     @Override
     public void startGameLoop()
     {
-        if (firstEntryInstructionsPending)
-        {
-            panel.showInstructionsCard();
-            firstEntryInstructionsPending = false;
-        }
+        gameOverPanel.setVisible(false);
+        panel.showFirstEntryInstructionsIfPending();
 
         pausePanel.setVisible(false);
         panel.startGameLoop();

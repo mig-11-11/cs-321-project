@@ -5,6 +5,7 @@
 package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeGame;
+import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.*;
@@ -14,16 +15,16 @@ import java.awt.event.HierarchyEvent;
 public class BreakoutGameAdapter implements ArcadeGame
 {
     private final BreakPanel panel;
-
-    private boolean firstEntryInstructionsPending = true;
-
     private final JLayeredPane layeredPane;
-    private PausePanel pausePanel = null;
+    private final PausePanel pausePanel;
+    private final GameOverPanel gameOverPanel;
+    private final Runnable onExitToMenu;
 
 
     public BreakoutGameAdapter(Runnable onExitToMenu)
     {
-        panel = new BreakPanel(onExitToMenu);
+        this.onExitToMenu = onExitToMenu;
+        panel = new BreakPanel(onExitToMenu, this::showGameOver);
         
         //Makes game controls still work
         panel.addHierarchyListener(e -> {
@@ -37,6 +38,28 @@ public class BreakoutGameAdapter implements ArcadeGame
         layeredPane = new JLayeredPane();
         layeredPane.setLayout(null); // IMPORTANT for manual positioning
 
+        // Game panel
+        layeredPane.add(panel, Integer.valueOf(0));
+
+        // Pause panel
+        pausePanel = new PausePanel(
+            this::resumeFromPause,
+            this::restartFromPause,
+            this::showInstructionsFromPause,
+            this::returnToMenuFromPause
+        );
+
+        gameOverPanel = new GameOverPanel(
+            "breakout",
+            this::restartFromGameOver,
+            this::returnToMenuFromGameOver
+        );
+
+        pausePanel.setVisible(false);
+        gameOverPanel.setVisible(false);
+        layeredPane.add(pausePanel, Integer.valueOf(1));
+        layeredPane.add(gameOverPanel, Integer.valueOf(2));
+
         layeredPane.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
@@ -45,41 +68,9 @@ public class BreakoutGameAdapter implements ArcadeGame
 
                 panel.setBounds(0, 0, w, h);
                 pausePanel.setBounds(0, 0, w, h);
+                gameOverPanel.setBounds(0, 0, w, h);
             }
         });
-
-        // Game panel
-        layeredPane.add(panel, Integer.valueOf(0));
-
-        // Pause panel
-        pausePanel = new PausePanel(
-
-            // Resume
-            () -> {
-                pausePanel.setVisible(false);
-                startGameLoop();
-                panel.requestFocusInWindow();
-            },
-
-            // Restart
-            () -> {
-                resetGame();
-                pausePanel.setVisible(false);
-                startGameLoop();
-                panel.requestFocusInWindow();
-            },
-
-            // Main Menu
-            () -> {
-                pausePanel.setVisible(false);
-                stopGameLoop();
-                resetGame();
-                onExitToMenu.run(); // tells ArcadeFrame to switch
-            }
-        );
-
-        pausePanel.setVisible(false);
-        layeredPane.add(pausePanel, Integer.valueOf(1));
 
         setupPauseKey();
     }
@@ -100,7 +91,17 @@ public class BreakoutGameAdapter implements ArcadeGame
                         return;
                     }
 
+                    if (gameOverPanel.isVisible())
+                    {
+                        return;
+                    }
+
                     if (panel.isShowingInstructionsCard())
+                    {
+                        return;
+                    }
+
+                    if (panel.shouldSuppressPauseToggle())
                     {
                         return;
                     }
@@ -110,6 +111,66 @@ public class BreakoutGameAdapter implements ArcadeGame
                 }
             });
         }
+
+    private void showGameOver(String resultText, int score, String runToken)
+    {
+        pausePanel.setVisible(false);
+        gameOverPanel.showResult(resultText, score, runToken);
+    }
+
+    private void resumeFromPause()
+    {
+        pausePanel.setVisible(false);
+        startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void restartFromPause()
+    {
+        resetGame();
+        pausePanel.setVisible(false);
+        startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void returnToMenuFromPause()
+    {
+        pausePanel.setVisible(false);
+        stopGameLoop();
+        resetGame();
+        if (onExitToMenu != null)
+        {
+            onExitToMenu.run();
+        }
+    }
+
+    private void showInstructionsFromPause()
+    {
+        pausePanel.setVisible(false);
+        panel.showInstructionsCard();
+        panel.requestFocusInWindow();
+    }
+
+    private void restartFromGameOver()
+    {
+        gameOverPanel.setVisible(false);
+        panel.resetGame();
+        panel.showFirstEntryInstructionsIfPending();
+        panel.startGameLoop();
+        panel.requestFocusInWindow();
+    }
+
+    private void returnToMenuFromGameOver()
+    {
+        gameOverPanel.setVisible(false);
+        panel.stopGameLoop();
+        panel.resetGame();
+
+        if (onExitToMenu != null)
+        {
+            onExitToMenu.run();
+        }
+    }
 
     
     
@@ -139,19 +200,15 @@ public class BreakoutGameAdapter implements ArcadeGame
     @Override
     public void resetGame()
     {
-
+          gameOverPanel.setVisible(false);
           panel.resetGame();
-
     }
 
     @Override
     public void startGameLoop()
     {
-        if (firstEntryInstructionsPending)
-        {
-            panel.showInstructionsCard();
-            firstEntryInstructionsPending = false;
-        }
+        gameOverPanel.setVisible(false);
+        panel.showFirstEntryInstructionsIfPending();
 
         panel.startGameLoop();
     }

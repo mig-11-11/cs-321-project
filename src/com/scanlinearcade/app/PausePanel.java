@@ -13,7 +13,7 @@ import java.awt.*;
  */
 public class PausePanel extends JPanel
 {
-    public PausePanel(Runnable onResume, Runnable onRestart, Runnable onMainMenu)
+    public PausePanel(Runnable onResume, Runnable onRestart, Runnable onInstructions, Runnable onMainMenu)
     {
         setLayout(new GridBagLayout());
 
@@ -38,14 +38,17 @@ public class PausePanel extends JPanel
 
         JButton resume = new JButton("Resume");
         JButton restart = new JButton("Restart");
+        JButton instructions = new JButton("Instructions");
         JButton menu = new JButton("Main Menu");
 
         styleButton(resume);
         styleButton(restart);
+        styleButton(instructions);
         styleButton(menu);
 
         resume.addActionListener(e -> onResume.run());
         restart.addActionListener(e -> onRestart.run());
+        instructions.addActionListener(e -> onInstructions.run());
         menu.addActionListener(e -> onMainMenu.run());
 
         box.add(title);
@@ -55,6 +58,8 @@ public class PausePanel extends JPanel
         box.add(resume);
         box.add(Box.createRigidArea(new Dimension(0, 12)));
         box.add(restart);
+        box.add(Box.createRigidArea(new Dimension(0, 12)));
+        box.add(instructions);
         box.add(Box.createRigidArea(new Dimension(0, 12)));
         box.add(menu);
 
