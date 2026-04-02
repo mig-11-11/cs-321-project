@@ -194,7 +194,7 @@ public class BreakoutGameAdapter implements ArcadeGame
     @Override
     public JComponent getView()
     {
-        return layeredPane;
+        return panel;
     }
 
     @Override

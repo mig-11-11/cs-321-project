@@ -1,3 +1,7 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeGame;
@@ -6,10 +10,6 @@ import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
-import javax.swing.JLayeredPane;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-import java.awt.event.HierarchyEvent;
 
 public class SpaceInvadersGameAdapter implements ArcadeGame
 {
@@ -187,7 +187,7 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     @Override
     public JComponent getView()
     {
-        return layeredPane;
+        return board;
     }
 
     @Override
@@ -204,14 +204,12 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         gameOverPanel.setVisible(false);
         panel.showFirstEntryInstructionsIfPending();
 
-        pausePanel.setVisible(false);
-        panel.startGameLoop();
-        panel.requestFocusInWindow();
+        board.startGameLoop();
     }
 
     @Override
     public void stopGameLoop()
     {
-        panel.stopGameLoop();
+        board.stopGameLoop();
     }
 }

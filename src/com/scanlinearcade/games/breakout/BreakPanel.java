@@ -153,14 +153,14 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	 * Resets round-specific objects (paddle and ball) after life loss or game start.
 	 * Signature: {@code private void resetRound()}
 	 */
-        private void resetRound() {
-            paddle = new Paddle(PANEL_WIDTH / 2 - 45, BOARD_HEIGHT - 40, 90, 12);
-            if (ball == null) {
-                ball = new Ball(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, 8);
-                return;
-            }
-            ball.reset(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, false);
-        }
+	private void resetRound() {
+		paddle = new Paddle(PANEL_WIDTH / 2 - 45, PANEL_HEIGHT - 40, 90, 12);
+		if (ball == null) {
+			ball = new Ball(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, 8);
+			return;
+		}
+		ball.reset(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, false);
+	}
 
 	private void advanceToNextBoard() {
 		clearedBoards++;
@@ -178,7 +178,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (running && !paused) {
-			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, BOARD_HEIGHT);
+			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
 			paddle.update(leftPressed, rightPressed, bounds);
 
 			boolean lost = ball.update(bounds, paddle, bricks, score);
@@ -246,11 +246,15 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	 *
 	 * @param g graphics context
 	 */
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
+	@Override
+	protected void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		Graphics2D g2 = (Graphics2D) g;
 
-            Graphics2D g2 = (Graphics2D) g.create();
+		bricks.draw(g2);
+		paddle.draw(g2);
+		ball.draw(g2);
+		score.draw(g2, PANEL_WIDTH);
 
             // Logical dimensions
             final int logicalBoardW = PANEL_WIDTH;
@@ -432,43 +436,21 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
                     return;
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_R) 
-                {
-                    restartFromDialog();
-                    return;
-                }
+			if (e.getKeyCode() == KeyEvent.VK_R) {
+				restartFromDialog();
+				return;
+			}
 
-                return;
-            }
+			return;
+		}
 
-            if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) 
-            {
-                leftPressed = true;
-            } 
-            else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) 
-            {
-                rightPressed = true;
-            }
-        }
-        
-        
-        
-            private void drawCenteredLine(Graphics2D g2, String text, int y) 
-            {
-                int x = (PANEL_WIDTH - g2.getFontMetrics().stringWidth(text)) / 2;
-                g2.drawString(text, x, y);
-            }
-            
-            public boolean isShowingInstructionsCard() 
-            {
-                return showingInstructionsCard;
-            }
+		if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
+			leftPressed = true;
+		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+			rightPressed = true;
+		}
+	}
 
-            
-            
-            
-            
-            
 	/**
 	 * Handles key release state for paddle movement.
 	 * Signature: {@code public void keyReleased(KeyEvent e)}

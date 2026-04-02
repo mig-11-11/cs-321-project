@@ -28,10 +28,10 @@ public class Player extends Sprite {
         width = ii.getImage().getWidth(null);
         setImage(ii.getImage());
 
-        int START_X = (Commons.BOARD_WIDTH - width) / 2;
+        int START_X = 270;
         setX(START_X);
 
-        int START_Y = Commons.GROUND - Commons.PLAYER_HEIGHT;
+        int START_Y = 280;
         setY(START_Y);
     }
 
@@ -47,9 +47,9 @@ public class Player extends Sprite {
             x = 2;
         }
 
-        if (x >= Commons.BOARD_WIDTH - width - 2) {
+        if (x >= Commons.BOARD_WIDTH - 2 * width) {
 
-            x = Commons.BOARD_WIDTH - width - 2;
+            x = Commons.BOARD_WIDTH - 2 * width;
         }
     }
 
