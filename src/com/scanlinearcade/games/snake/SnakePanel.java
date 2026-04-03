@@ -60,6 +60,24 @@ public class SnakePanel extends JPanel {
     private static final int ROWS = 20;     // grid height
     private static final int FPS_MS = 120;  // lower = faster
     
+    private static final int HUD_HEIGHT = 48; // slightly taller HUD bar
+
+    // HUD colors
+    private static final Color HUD_BG = new Color(58, 58, 62);
+    private static final Color HUD_TEXT = new Color(235, 235, 235);
+    private static final Color HUD_ACCENT = new Color(0, 255, 200);
+
+    // Instruction card colors
+    private static final Color INSTRUCTION_DIM = new Color(0, 0, 0, 110);
+    private static final Color INSTRUCTION_BOX_BG = new Color(10, 16, 30, 220);
+    private static final Color INSTRUCTION_BOX_BORDER = new Color(0, 255, 200, 120);
+    private static final Color INSTRUCTION_TITLE = new Color(230, 245, 255);
+    private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
+    
+    
+    
+    
+    
     /** Domain model containing all Snake state and game rules. */
     private final SnakeModel model = new SnakeModel(COLS, ROWS);
     
@@ -70,6 +88,7 @@ public class SnakePanel extends JPanel {
     private boolean gameOverOverlayShown;
     private boolean paused;
     private boolean showingInstructionsCard;
+    private boolean firstEntryInstructionsPending;
     private long suppressPauseUntilMs;
     private String currentRunToken;
 
@@ -90,9 +109,14 @@ public class SnakePanel extends JPanel {
     
     
     
-    public SnakePanel(Runnable returnToHubAction) 
+    public SnakePanel(Runnable returnToHubAction)
     {
-        setBackground(Color.WHITE);
+        this(returnToHubAction, null);
+    }
+
+    public SnakePanel(Runnable returnToHubAction, GameOverHandler gameOverHandler) 
+    {
+        setBackground(Color.BLACK);
         setFocusable(true);
         this.returnToHubAction = returnToHubAction;
         this.gameOverHandler = gameOverHandler;
@@ -100,6 +124,7 @@ public class SnakePanel extends JPanel {
         this.gameOverOverlayShown = false;
         this.paused = false;
         this.showingInstructionsCard = false;
+        this.firstEntryInstructionsPending = true;
         this.suppressPauseUntilMs = 0L;
 
         // Game loop, updates the model then repaints the panel
@@ -118,7 +143,7 @@ public class SnakePanel extends JPanel {
 
                 if (this.gameOverHandler != null)
                 {
-                    this.gameOverHandler.onGameOver("Game Over", model.getScore(), currentRunToken);
+                    this.gameOverHandler.onGameOver("Game Over!", model.getScore(), currentRunToken);
                 }
             }
             repaint();
@@ -129,7 +154,7 @@ public class SnakePanel extends JPanel {
         {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (paused && showingInstructionsCard)
+                if (showingInstructionsCard)
                 {
                     if (e.getKeyCode() == KeyEvent.VK_M)
                     {
@@ -139,7 +164,12 @@ public class SnakePanel extends JPanel {
 
                     paused = false;
                     showingInstructionsCard = false;
+                    firstEntryInstructionsPending = false;
                     suppressPauseUntilMs = System.currentTimeMillis() + 200L;
+                    if (!timer.isRunning())
+                    {
+                        timer.start();
+                    }
                     repaint();
                     return;
                 }
@@ -151,9 +181,7 @@ public class SnakePanel extends JPanel {
                     case KeyEvent.VK_RIGHT, KeyEvent.VK_D -> model.setDirection(Direction.RIGHT);
 
                     case KeyEvent.VK_R -> model.reset(); // restart
-                    case KeyEvent.VK_SPACE -> togglePause();
-                    case KeyEvent.VK_I -> toggleInstructionsCard();
-                    case KeyEvent.VK_M -> returnToHubFromDialog();
+                    case KeyEvent.VK_I -> showInstructionsCard(); // instructions
                     default -> { }
                 }
 
@@ -187,7 +215,7 @@ public class SnakePanel extends JPanel {
     public Dimension getPreferredSize() 
     {
         // Add extra space for HUD text
-        return new Dimension(COLS * CELL, ROWS * CELL + 40);
+        return new Dimension(COLS * CELL, ROWS * CELL + HUD_HEIGHT);
     }
 
     private void drawCenteredLine(Graphics2D g2, String text, int y)
@@ -218,82 +246,79 @@ public class SnakePanel extends JPanel {
      *
      * @param g the Swing graphics context for this component
      */
-    @Override
-    protected void paintComponent(Graphics g) 
+    
+@Override
+protected void paintComponent(Graphics g) 
+{
+    super.paintComponent(g);
+
+    Graphics2D g2 = (Graphics2D) g.create();
+    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+    // Logical game size
+    final int hudHeight = HUD_HEIGHT;
+    final int logicalBoardW = COLS * CELL;
+    final int logicalBoardH = ROWS * CELL;
+    final int logicalTotalH = logicalBoardH + hudHeight;
+
+    // Available size in the actual panel
+    int panelW = getWidth();
+    int panelH = getHeight();
+
+    // Scale uniformly so the whole game fits and keeps its aspect ratio
+    double scaleX = (double) panelW / logicalBoardW;
+    double scaleY = (double) panelH / logicalTotalH;
+    double scale = Math.min(scaleX, scaleY);
+
+    // Center the scaled game area
+    int drawW = (int) Math.round(logicalBoardW * scale);
+    int drawH = (int) Math.round(logicalTotalH * scale);
+    int offsetX = (panelW - drawW) / 2;
+    int offsetY = (panelH - drawH) / 2;
+
+    // Fill outer background
+    g2.setColor(Color.BLACK);
+    g2.fillRect(0, 0, panelW, panelH);
+
+    // Move and scale into place
+    g2.translate(offsetX, offsetY);
+    g2.scale(scale, scale);
+
+    // Board background area
+    g2.setColor(new Color(12, 12, 12));
+    g2.fillRect(0, 0, logicalBoardW, logicalBoardH);
+
+    // Optional grid
+    g2.setColor(new Color(20, 20, 20));
+    for (int x = 0; x <= COLS; x++) 
     {
-        super.paintComponent(g);
+        g2.drawLine(x * CELL, 0, x * CELL, logicalBoardH);
+    }
+    for (int y = 0; y <= ROWS; y++) 
+    {
+        g2.drawLine(0, y * CELL, logicalBoardW, y * CELL);
+    }
 
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+    // Food
+    Point food = model.getFood();
+    g2.setColor(Color.WHITE);
+    g2.fillOval(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6);
 
-        int boardW = COLS * CELL;
-        int boardH = ROWS * CELL;
-
-        // Board background area (top part)
-        g2.setColor(new Color(12, 12, 12));
-        g2.fillRect(0, 0, boardW, boardH);
-
-        // Optional grid
-        g2.setColor(new Color(25, 25, 25));
-        for (int x = 0; x <= COLS; x++) g2.drawLine(x * CELL, 0, x * CELL, boardH);
-        for (int y = 0; y <= ROWS; y++) g2.drawLine(0, y * CELL, boardW, y * CELL);
-
-        // Food
-        Point food = model.getFood();
-        g2.setColor(Color.WHITE);
-        g2.fillOval(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6);
-
-        // Snake
-        boolean first = true;
-        for (Point p : model.getSnake()) {
-            if (first) {
-                g2.setColor(new Color(0, 220, 120)); // head
-                first = false;
-            } else {
-                g2.setColor(new Color(0, 160, 90)); // body
-            }
-            g2.fillRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4);
-        }
-
-        // HUD area (bottom bar)
-        g2.setColor(Color.DARK_GRAY);
-        g2.fillRect(0, boardH, boardW, 40);
-
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Consolas", Font.PLAIN, 16));
-        g2.drawString("Score: " + model.getScore() + "   [Space]=Pause  [R]=Restart  [M]=Menu", 10, boardH + 25);
-
-        if (paused)
+    // Snake
+    boolean first = true;
+    for (Point p : model.getSnake()) 
+    {
+        if (first) 
         {
-            g2.setColor(new Color(0, 0, 0, 190));
-            g2.fillRect(30, 40, boardW - 60, boardH - 80);
-
-            g2.setColor(Color.WHITE);
-            g2.setFont(new Font("Consolas", Font.BOLD, 26));
-
-            if (showingInstructionsCard)
-            {
-                drawCenteredLine(g2, "Snake Instructions", 90);
-                g2.setFont(new Font("Consolas", Font.PLAIN, 16));
-                drawCenteredLine(g2, "Eat food to grow and increase score.", 140);
-                drawCenteredLine(g2, "Avoid walls and your own body.", 170);
-                drawCenteredLine(g2, "Move: [W/A/S/D] or [Arrow Keys]", 220);
-                drawCenteredLine(g2, "Pause/Resume: [Space]", 250);
-                drawCenteredLine(g2, "Press any button to start Snake", 300);
-                drawCenteredLine(g2, "Press [M] to return to the main menu", 330);
-            }
-            else
-            {
-                g2.drawString("Paused", 320, 90);
-                g2.setFont(new Font("Consolas", Font.PLAIN, 16));
-                g2.drawString("[Space] Resume", 280, 160);
-                g2.drawString("[R] Restart", 290, 190);
-                g2.drawString("[M] Return to Main Menu", 220, 220);
-                g2.drawString("[I] Instructions", 250, 250);
-            }
+            g2.setColor(new Color(0, 220, 120)); // head
+            first = false;
+        } 
+        else 
+        {
+            g2.setColor(new Color(0, 160, 90)); // body
         }
 
-        g2.dispose();
+        g2.fillRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4);
     }
 
     // HUD area
@@ -363,13 +388,6 @@ public class SnakePanel extends JPanel {
     g2.dispose();
 }
 
-public boolean isShowingInstructionsCard()
-{
-    return showingInstructionsCard;
-}
-    
-   
-   
     public void startGameLoop()
     {
         if(!timer.isRunning())
@@ -408,6 +426,14 @@ public boolean isShowingInstructionsCard()
         paused = true;
         showingInstructionsCard = true;
         repaint();
+    }
+
+    public void showFirstEntryInstructionsIfPending()
+    {
+        if (firstEntryInstructionsPending)
+        {
+            showInstructionsCard();
+        }
     }
 
     public boolean isShowingInstructionsCard()

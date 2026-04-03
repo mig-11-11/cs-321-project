@@ -10,7 +10,6 @@
 package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeFrame;
-import com.scanlinearcade.app.GameOverDialog;
 import java.awt.*;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -57,6 +56,12 @@ import javax.swing.Timer;
  * - Add pausing functionality (variable isPaused)
  */
 public class BreakPanel extends JPanel implements ActionListener, KeyListener {
+
+	@FunctionalInterface
+	public interface GameOverHandler {
+		void onGameOver(String resultText, int score, String runToken);
+	}
+
 public static final int PANEL_WIDTH = 800;
 public static final int BOARD_HEIGHT = 552;
 public static final int HUD_HEIGHT = 48;
@@ -87,6 +92,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	private boolean rightPressed;
 	private boolean paused;
 	private boolean showingInstructionsCard;
+	private boolean firstEntryInstructionsPending;
 	private long suppressPauseUntilMs;
 	private boolean gameOverOverlayShown;
 	private final Runnable returnToHubAction;
@@ -131,6 +137,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 		running = true;
 		paused = false;
 		showingInstructionsCard = false;
+		firstEntryInstructionsPending = true;
 		suppressPauseUntilMs = 0L;
 		gameOverOverlayShown = false;
 		if (timer != null && !timer.isRunning()) {
@@ -146,14 +153,14 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	 * Resets round-specific objects (paddle and ball) after life loss or game start.
 	 * Signature: {@code private void resetRound()}
 	 */
-	private void resetRound() {
-		paddle = new Paddle(PANEL_WIDTH / 2 - 45, PANEL_HEIGHT - 40, 90, 12);
-		if (ball == null) {
-			ball = new Ball(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, 8);
-			return;
-		}
-		ball.reset(PANEL_WIDTH / 2, PANEL_HEIGHT - 60, false);
-	}
+        private void resetRound() {
+            paddle = new Paddle(PANEL_WIDTH / 2 - 45, BOARD_HEIGHT - 40, 90, 12);
+            if (ball == null) {
+                ball = new Ball(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, 8);
+                return;
+            }
+            ball.reset(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, false);
+        }
 
 	private void advanceToNextBoard() {
 		clearedBoards++;
@@ -171,7 +178,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (running && !paused) {
-			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+			Rectangle bounds = new Rectangle(0, 0, PANEL_WIDTH, BOARD_HEIGHT);
 			paddle.update(leftPressed, rightPressed, bounds);
 
 			boolean lost = ball.update(bounds, paddle, bricks, score);
@@ -193,7 +200,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 				timer.stop();
 				boolean won = bricks.isCleared();
 				if (gameOverHandler != null) {
-					String resultText = won ? "You Win!" : "Game Over";
+					String resultText = won ? "You Win!" : "Game Over!";
 					gameOverHandler.onGameOver(resultText, score.getScore(), currentRunToken);
 				}
 			}
@@ -214,6 +221,15 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 		}
 	}
 
+	private void restartFromDialog() {
+		resetGame();
+		paused = false;
+		showingInstructionsCard = false;
+		leftPressed = false;
+		rightPressed = false;
+		startGameLoop();
+	}
+
 	public void endGame() {
 		running = false;
 		paused = false;
@@ -230,15 +246,11 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	 *
 	 * @param g graphics context
 	 */
-	@Override
-	protected void paintComponent(Graphics g) {
-		super.paintComponent(g);
-		Graphics2D g2 = (Graphics2D) g;
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
 
-		bricks.draw(g2);
-		paddle.draw(g2);
-		ball.draw(g2);
-		score.draw(g2, PANEL_WIDTH);
+            Graphics2D g2 = (Graphics2D) g.create();
 
             // Logical dimensions
             final int logicalBoardW = PANEL_WIDTH;
@@ -342,14 +354,8 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
                 drawCenteredLine(g2, "Press [M] to return to the main menu", boxY + 312);
             }
 
-            // Optional simple paused fallback text
-            if (paused && !showingInstructionsCard) {
-                drawCenteredText(g2, "Paused", logicalBoardH / 2 - 8, 28);
-                drawCenteredText(g2, "Press [Esc] for the Pause Menu", logicalBoardH / 2 + 24, 16);
-            }
-
             if (!running) {
-                drawCenteredText(g2, "Game Over", logicalBoardH / 2 - 10, 28);
+				drawCenteredText(g2, "Game Over!", logicalBoardH / 2 - 10, 28);
             }
 
             g2.dispose();
@@ -391,6 +397,26 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
         @Override
         public void keyPressed(KeyEvent e) 
         {
+			if (showingInstructionsCard)
+			{
+				if (e.getKeyCode() == KeyEvent.VK_M)
+				{
+					returnToHubFromDialog();
+					return;
+				}
+
+				paused = false;
+				showingInstructionsCard = false;
+				firstEntryInstructionsPending = false;
+				suppressPauseUntilMs = System.currentTimeMillis() + 200L;
+				if (!timer.isRunning())
+				{
+					timer.start();
+				}
+				repaint();
+				return;
+			}
+
             // Open instructions at any time during gameplay, just like Snake
             if (e.getKeyCode() == KeyEvent.VK_I && running)
             {
@@ -398,61 +424,51 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
                 return;
             }
 
-            // Old space pause logic, if you still want to keep it
-            if (e.getKeyCode() == KeyEvent.VK_SPACE && running) 
-            {
-                paused = !paused;
-                if (paused) 
-                {
-                    leftPressed = false;
-                    rightPressed = false;
-                    showingInstructionsCard = false;
-                } 
-                else 
-                {
-                    showingInstructionsCard = false;
-                }
-                repaint();
-                return;
-            }
-
             if (paused) 
             {
-                if (showingInstructionsCard) 
-                {
-                    if (e.getKeyCode() == KeyEvent.VK_M) 
-                    {
-                        returnToHubFromDialog();
-                        return;
-                    }
-
-                    paused = false;
-                    showingInstructionsCard = false;
-                    repaint();
-                    return;
-                }
-
                 if (e.getKeyCode() == KeyEvent.VK_M) 
                 {
                     returnToHubFromDialog();
                     return;
                 }
 
-			if (e.getKeyCode() == KeyEvent.VK_R) {
-				restartFromDialog();
-				return;
-			}
+                if (e.getKeyCode() == KeyEvent.VK_R) 
+                {
+                    restartFromDialog();
+                    return;
+                }
 
-			return;
-		}
+                return;
+            }
 
-		if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
-			leftPressed = true;
-		} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			rightPressed = true;
-		}
-	}
+            if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) 
+            {
+                leftPressed = true;
+            } 
+            else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) 
+            {
+                rightPressed = true;
+            }
+        }
+        
+        
+        
+            private void drawCenteredLine(Graphics2D g2, String text, int y) 
+            {
+                int x = (PANEL_WIDTH - g2.getFontMetrics().stringWidth(text)) / 2;
+                g2.drawString(text, x, y);
+            }
+            
+            public boolean isShowingInstructionsCard() 
+            {
+                return showingInstructionsCard;
+            }
 
+            
+            
+            
+            
+            
 	/**
 	 * Handles key release state for paddle movement.
 	 * Signature: {@code public void keyReleased(KeyEvent e)}
@@ -527,9 +543,12 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 		repaint();
 	}
 
-	public boolean isShowingInstructionsCard()
+	public void showFirstEntryInstructionsIfPending()
 	{
-		return showingInstructionsCard;
+		if (firstEntryInstructionsPending)
+		{
+			showInstructionsCard();
+		}
 	}
 
 	public boolean shouldSuppressPauseToggle()
