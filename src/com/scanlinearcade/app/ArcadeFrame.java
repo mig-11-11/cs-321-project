@@ -16,6 +16,11 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import java.io.File;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 
 public class ArcadeFrame extends JFrame
 {
@@ -23,6 +28,8 @@ public class ArcadeFrame extends JFrame
     private static final String SCORES_CARD = "scores";
     private static final String SETTINGS_CARD = "settings";
 
+    private final GameSettings settings = new GameSettings();
+    
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel cards = new JPanel(cardLayout);
 
@@ -45,6 +52,7 @@ public class ArcadeFrame extends JFrame
         );
         
         SettingsPanel settingsPanel = new SettingsPanel(
+                settings,
                 () -> showMenu()
         );
 
@@ -72,13 +80,16 @@ public class ArcadeFrame extends JFrame
         setLocationRelativeTo(null);
 
         showMenu();
+        
+        String filepath = "src/com/scanlinearcade/assets/music/boogie-pecan-pie-main-version-41135-02-14.wav";
+        PlayMusic(filepath);
     }
 
     private void registerGames()
     {
-        games.put("snake", new SnakeGameAdapter(() -> returnFromGame("snake")));
-        games.put("breakout", new BreakoutGameAdapter(() -> returnFromGame("breakout")));
-        games.put("invaders", new SpaceInvadersGameAdapter(() -> returnFromGame("invaders")));
+        games.put("snake", new SnakeGameAdapter(settings, () -> returnFromGame("snake")));
+        games.put("breakout", new BreakoutGameAdapter(settings, () -> returnFromGame("breakout")));
+        games.put("invaders", new SpaceInvadersGameAdapter(settings, () -> returnFromGame("invaders")));
     }
 
     private void showGame(String cardName)
@@ -169,5 +180,30 @@ public class ArcadeFrame extends JFrame
 
         panel.add(label, BorderLayout.CENTER);
         return panel;
+    }
+    
+    public static void PlayMusic(String location)
+    {
+        try
+        {
+            File musicPath = new File(location);
+            
+            if(musicPath.exists())
+            {
+                AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicPath);
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioInput);
+                clip.start();
+                clip.loop(Clip.LOOP_CONTINUOUSLY);
+            }
+            else
+            {
+                System.out.println("Cant find file");
+            }
+        }
+        catch(Exception e)
+        {
+            System.out.println(e);
+        }
     }
 }

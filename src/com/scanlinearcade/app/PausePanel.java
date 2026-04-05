@@ -19,7 +19,7 @@ public class PausePanel extends JPanel
 
         // THIS is what makes it an overlay
         setBackground(new Color(0, 0, 0, 115)); // softer transparent overlay
-        setOpaque(true);
+        setOpaque(false);
 
         JPanel box = new JPanel();
         box.setLayout(new BoxLayout(box, BoxLayout.Y_AXIS));

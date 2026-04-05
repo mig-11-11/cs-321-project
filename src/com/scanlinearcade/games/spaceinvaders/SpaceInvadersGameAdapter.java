@@ -2,6 +2,7 @@ package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeGame;
 import com.scanlinearcade.app.GameOverPanel;
+import com.scanlinearcade.app.GameSettings;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.AbstractAction;
@@ -18,9 +19,11 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     private final PausePanel pausePanel;
     private final GameOverPanel gameOverPanel;
     private final Runnable onExitToMenu;
+    private final GameSettings settings;
 
-    public SpaceInvadersGameAdapter(Runnable onExitToMenu)
+    public SpaceInvadersGameAdapter(GameSettings settings, Runnable onExitToMenu)
     {
+        this.settings = settings;
         this.onExitToMenu = onExitToMenu;
 
         panel = new Board(onExitToMenu, this::showGameOver);

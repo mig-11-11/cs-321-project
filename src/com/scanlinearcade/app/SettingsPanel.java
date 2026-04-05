@@ -7,12 +7,16 @@ package com.scanlinearcade.app;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import javax.swing.BorderFactory;
+import static javax.swing.Box.createRigidArea;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.SwingConstants;
 
 /**
@@ -25,11 +29,13 @@ public class SettingsPanel extends JPanel
     private static final String GAMEPLAY_CARD = "Gameplay";
     private static final String DISPLAY_CARD = "Display";
             
+    private final GameSettings settings;
     private final CardLayout settingsCardLayout;
     private final JPanel settingsCards;
     
-    public SettingsPanel(Runnable returnToHub)
+    public SettingsPanel(GameSettings settings, Runnable returnToHub)
     {
+        this.settings = settings;
         settingsCardLayout = new CardLayout();
         settingsCards = new JPanel(settingsCardLayout);
         
@@ -117,6 +123,25 @@ public class SettingsPanel extends JPanel
         JPanel soundPanel = new JPanel();
         soundPanel.setLayout(new BoxLayout(soundPanel, BoxLayout.Y_AXIS));
         soundPanel.setBackground(Color.black);
+        
+        soundPanel.add(createRigidArea(new Dimension(0, 60)));
+
+        // Set Label
+        JLabel volumeLabel = new JLabel("Volume:");
+        volumeLabel.setForeground(Color.lightGray);
+        volumeLabel.setBackground(Color.black);
+        volumeLabel.setFont(new Font("Monospaced", Font.BOLD, 30));
+        volumeLabel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        volumeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        soundPanel.add(volumeLabel);
+        
+        // Set Slider
+        JSlider volumeSlider = new JSlider(0, 100, 50);
+        volumeSlider.setOpaque(false);
+        volumeSlider.setMaximumSize(new Dimension(400, 50)); 
+        
+        soundPanel.add(volumeSlider);
+        
         return soundPanel;
     }
     

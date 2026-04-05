@@ -6,6 +6,7 @@ package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeGame;
 import com.scanlinearcade.app.GameOverPanel;
+import com.scanlinearcade.app.GameSettings;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.*;
@@ -19,10 +20,12 @@ public class BreakoutGameAdapter implements ArcadeGame
     private final PausePanel pausePanel;
     private final GameOverPanel gameOverPanel;
     private final Runnable onExitToMenu;
+    private final GameSettings settings;
 
 
-    public BreakoutGameAdapter(Runnable onExitToMenu)
+    public BreakoutGameAdapter(GameSettings settings, Runnable onExitToMenu)
     {
+        this.settings = settings;
         this.onExitToMenu = onExitToMenu;
         panel = new BreakPanel(onExitToMenu, this::showGameOver);
         

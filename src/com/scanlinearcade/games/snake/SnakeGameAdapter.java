@@ -6,6 +6,7 @@ package com.scanlinearcade.games.snake;
 
 import com.scanlinearcade.app.ArcadeGame;
 import com.scanlinearcade.app.GameOverPanel;
+import com.scanlinearcade.app.GameSettings;
 import com.scanlinearcade.app.PausePanel;
 
 import javax.swing.AbstractAction;
@@ -22,10 +23,13 @@ public class SnakeGameAdapter implements ArcadeGame
     private final PausePanel pausePanel;
     private final GameOverPanel gameOverPanel;
     private final Runnable returnToHubAction;
+    private final GameSettings settings;
 
-    public SnakeGameAdapter(Runnable returnToHubAction)
+    public SnakeGameAdapter(GameSettings settings, Runnable returnToHubAction)
     {
+        this.settings = settings;
         this.returnToHubAction = returnToHubAction;
+        
 
         panel = new SnakePanel(returnToHubAction, this::showGameOver);
 
