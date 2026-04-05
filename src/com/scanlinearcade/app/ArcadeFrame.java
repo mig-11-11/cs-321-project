@@ -43,6 +43,10 @@ public class ArcadeFrame extends JFrame
             this::showScores,
             this::showSettings
         );
+        
+        SettingsPanel settingsPanel = new SettingsPanel(
+                () -> showMenu()
+        );
 
         cards.add(menuPanel, MENU_CARD);
 
@@ -61,7 +65,7 @@ public class ArcadeFrame extends JFrame
         }
 
         cards.add(createPlaceholderPanel("High Scores", "Top scores will appear here."), SCORES_CARD);
-        cards.add(createPlaceholderPanel("Settings", "Settings will appear here."), SETTINGS_CARD);
+        cards.add(settingsPanel, SETTINGS_CARD);
 
         setContentPane(cards);
         pack();
