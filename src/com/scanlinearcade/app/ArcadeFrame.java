@@ -34,6 +34,8 @@ public class ArcadeFrame extends JFrame
     private final JPanel cards = new JPanel(cardLayout);
 
     private final Map<String, ArcadeGame> games = new LinkedHashMap<>();
+    
+    private final HighScoresPanel highScoresPanel = new HighScoresPanel(this::showMenu);
 
     public ArcadeFrame()
     {
@@ -72,7 +74,7 @@ public class ArcadeFrame extends JFrame
             game.stopGameLoop();
         }
 
-        cards.add(createPlaceholderPanel("High Scores", "Top scores will appear here."), SCORES_CARD);
+        cards.add(highScoresPanel, SCORES_CARD);
         cards.add(settingsPanel, SETTINGS_CARD);
 
         setContentPane(cards);
@@ -128,6 +130,7 @@ public class ArcadeFrame extends JFrame
 
     private void showScores()
     {
+        highScoresPanel.refreshScores();
         cardLayout.show(cards, SCORES_CARD);
     }
 
@@ -165,22 +168,7 @@ public class ArcadeFrame extends JFrame
         return screen;
     }
 
-    private JPanel createPlaceholderPanel(String title, String message)
-    {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(18, 18, 30));
-
-        JLabel label = new JLabel(
-            "<html><div style='text-align:center;'>" +
-            "<h1 style='color:#00FFC8; font-family:monospace;'>" + title + "</h1>" +
-            "<p style='color:white; font-family:monospace;'>" + message + "</p>" +
-            "</div></html>",
-            SwingConstants.CENTER
-        );
-
-        panel.add(label, BorderLayout.CENTER);
-        return panel;
-    }
+    
     
     public static void PlayMusic(String location)
     {

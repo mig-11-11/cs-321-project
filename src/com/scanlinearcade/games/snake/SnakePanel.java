@@ -60,19 +60,44 @@ public class SnakePanel extends JPanel {
     private static final int ROWS = 20;     // grid height
     private static final int FPS_MS = 120;  // lower = faster
     
-    private static final int HUD_HEIGHT = 48; // slightly taller HUD bar
+private static final int HUD_HEIGHT = 48; // slightly taller HUD bar
+
+    // Retro neon palette
+    private static final Color OUTER_BG = new Color(3, 4, 12);
+    private static final Color BOARD_BG = new Color(10, 12, 28);
+    private static final Color GRID_MINOR = new Color(18, 22, 44);
+    private static final Color GRID_MAJOR = new Color(24, 34, 68);
+
+    private static final Color NEON_CYAN = new Color(0, 255, 200);
+    private static final Color NEON_PINK = new Color(255, 70, 180);
+    private static final Color ARCADE_YELLOW = new Color(255, 220, 90);
+    private static final Color SOFT_WHITE = new Color(235, 235, 245);
+
+    private static final Color BOARD_BORDER = NEON_CYAN;
+    private static final Color BOARD_BORDER_ACCENT = NEON_PINK;
 
     // HUD colors
-    private static final Color HUD_BG = new Color(58, 58, 62);
-    private static final Color HUD_TEXT = new Color(235, 235, 235);
-    private static final Color HUD_ACCENT = new Color(0, 255, 200);
+    private static final Color HUD_BG = new Color(12, 16, 32);
+    private static final Color HUD_TEXT = SOFT_WHITE;
+    private static final Color HUD_ACCENT = NEON_CYAN;
+    private static final Color HUD_SCORE = ARCADE_YELLOW;
+
+    // Snake colors
+    private static final Color SNAKE_HEAD_FILL = new Color(0, 255, 200);
+    private static final Color SNAKE_HEAD_BORDER = new Color(255, 70, 180);
+    private static final Color SNAKE_BODY_FILL = new Color(255, 70, 180);
+    private static final Color SNAKE_BODY_BORDER = new Color(0, 255, 200);
+
+    // Food colors
+    private static final Color FOOD_FILL = new Color(255, 220, 90);
+    private static final Color FOOD_ACCENT = new Color(255, 70, 180);
 
     // Instruction card colors
-    private static final Color INSTRUCTION_DIM = new Color(0, 0, 0, 110);
-    private static final Color INSTRUCTION_BOX_BG = new Color(10, 16, 30, 220);
-    private static final Color INSTRUCTION_BOX_BORDER = new Color(0, 255, 200, 120);
-    private static final Color INSTRUCTION_TITLE = new Color(230, 245, 255);
-    private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
+    private static final Color INSTRUCTION_DIM = new Color(0, 0, 0, 145);
+    private static final Color INSTRUCTION_BOX_BG = new Color(8, 10, 28, 235);
+    private static final Color INSTRUCTION_BOX_BORDER = new Color(0, 255, 200, 180);
+    private static final Color INSTRUCTION_TITLE = new Color(0, 255, 200);
+    private static final Color INSTRUCTION_TEXT = new Color(235, 235, 245);
     
     
     
@@ -223,6 +248,60 @@ public class SnakePanel extends JPanel {
         int x = (COLS * CELL - g2.getFontMetrics().stringWidth(text)) / 2;
         g2.drawString(text, x, y);
     }
+    
+    private void drawScanlines(Graphics2D g2, int width, int height)
+    {
+        g2.setColor(new Color(255, 255, 255, 8));
+        for (int y = 0; y < height; y += 4)
+        {
+            g2.drawLine(0, y, width, y);
+        }
+    }
+
+    private void drawSnakeSegment(Graphics2D g2, Point p, boolean head)
+    {
+        int px = p.x * CELL;
+        int py = p.y * CELL;
+
+        if (head)
+        {
+            g2.setColor(SNAKE_HEAD_BORDER);
+            g2.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+
+            g2.setColor(SNAKE_HEAD_FILL);
+            g2.fillRect(px + 4, py + 4, CELL - 8, CELL - 8);
+
+            // pixel eyes
+            g2.setColor(Color.BLACK);
+            g2.fillRect(px + 7, py + 7, 3, 3);
+            g2.fillRect(px + CELL - 10, py + 7, 3, 3);
+            g2.fillRect(px + CELL - 13, py + 13, 3, 2);
+        }
+        else
+        {
+            g2.setColor(SNAKE_BODY_BORDER);
+            g2.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
+
+            g2.setColor(SNAKE_BODY_FILL);
+            g2.fillRect(px + 3, py + 3, CELL - 6, CELL - 6);
+        }
+    }
+
+    private void drawFood(Graphics2D g2, Point food)
+    {
+        int px = food.x * CELL;
+        int py = food.y * CELL;
+
+        g2.setColor(FOOD_ACCENT);
+        g2.fillOval(px + 4, py + 4, CELL - 8, CELL - 8);
+
+        g2.setColor(FOOD_FILL);
+        g2.fillOval(px + 6, py + 6, CELL - 12, CELL - 12);
+
+        // tiny neon highlight
+        g2.setColor(Color.WHITE);
+        g2.fillRect(px + 9, py + 8, 3, 3);
+    }
 
   
     /**
@@ -277,7 +356,7 @@ protected void paintComponent(Graphics g)
     int offsetY = (panelH - drawH) / 2;
 
     // Fill outer background
-    g2.setColor(Color.BLACK);
+    g2.setColor(OUTER_BG);
     g2.fillRect(0, 0, panelW, panelH);
 
     // Move and scale into place
@@ -285,45 +364,53 @@ protected void paintComponent(Graphics g)
     g2.scale(scale, scale);
 
     // Board background area
-    g2.setColor(new Color(12, 12, 12));
+    g2.setColor(BOARD_BG);
     g2.fillRect(0, 0, logicalBoardW, logicalBoardH);
 
-    // Optional grid
-    g2.setColor(new Color(20, 20, 20));
+    // Scanlines for retro monitor feel
+    drawScanlines(g2, logicalBoardW, logicalBoardH);
+
+    // Neon border around board
+    g2.setColor(BOARD_BORDER);
+    g2.drawRect(0, 0, logicalBoardW - 1, logicalBoardH - 1);
+
+    g2.setColor(BOARD_BORDER_ACCENT);
+    g2.drawLine(0, 1, logicalBoardW - 1, 1);
+
+    // Grid
     for (int x = 0; x <= COLS; x++) 
     {
+        g2.setColor((x % 5 == 0) ? GRID_MAJOR : GRID_MINOR);
         g2.drawLine(x * CELL, 0, x * CELL, logicalBoardH);
     }
+
     for (int y = 0; y <= ROWS; y++) 
     {
+        g2.setColor((y % 5 == 0) ? GRID_MAJOR : GRID_MINOR);
         g2.drawLine(0, y * CELL, logicalBoardW, y * CELL);
     }
 
     // Food
     Point food = model.getFood();
-    g2.setColor(Color.WHITE);
-    g2.fillOval(food.x * CELL + 3, food.y * CELL + 3, CELL - 6, CELL - 6);
+    drawFood(g2, food);
 
     // Snake
     boolean first = true;
     for (Point p : model.getSnake()) 
     {
-        if (first) 
-        {
-            g2.setColor(new Color(0, 220, 120)); // head
-            first = false;
-        } 
-        else 
-        {
-            g2.setColor(new Color(0, 160, 90)); // body
-        }
-
-        g2.fillRect(p.x * CELL + 2, p.y * CELL + 2, CELL - 4, CELL - 4);
+        drawSnakeSegment(g2, p, first);
+        first = false;
     }
 
     // HUD area
     g2.setColor(HUD_BG);
     g2.fillRect(0, logicalBoardH, logicalBoardW, hudHeight);
+
+    // HUD neon trim
+    g2.setColor(NEON_CYAN);
+    g2.drawLine(0, logicalBoardH, logicalBoardW, logicalBoardH);
+    g2.setColor(NEON_PINK);
+    g2.drawLine(0, logicalBoardH + 2, logicalBoardW, logicalBoardH + 2);
 
     g2.setFont(new Font("Consolas", Font.PLAIN, 16));
     FontMetrics fm = g2.getFontMetrics();
@@ -344,7 +431,7 @@ protected void paintComponent(Graphics g)
 
     // Bottom right
     int scoreX = logicalBoardW - fm.stringWidth(scoreText) - 10;
-    g2.setColor(HUD_TEXT);
+    g2.setColor(HUD_SCORE);
     g2.drawString(scoreText, scoreX, hudBaseline);
 
     // Instructions overlay only
@@ -367,6 +454,10 @@ protected void paintComponent(Graphics g)
         g2.setColor(INSTRUCTION_BOX_BORDER);
         g2.setStroke(new BasicStroke(2f));
         g2.drawRoundRect(boxX, boxY, boxW, boxH, 28, 28);
+
+        // Small accent line
+        g2.setColor(NEON_PINK);
+        g2.drawLine(boxX + 20, boxY + 62, boxX + boxW - 20, boxY + 62);
 
         // Title
         g2.setColor(INSTRUCTION_TITLE);

@@ -21,7 +21,7 @@ import java.util.Set;
  */
 public final class HighScoreStore {
 
-    public static final int DEFAULT_MAX_ENTRIES = 8;
+    public static final int DEFAULT_MAX_ENTRIES = 20;
 
     private static final Path SCORE_FILE = Paths.get(
             System.getProperty("user.home"),

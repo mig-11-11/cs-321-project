@@ -46,7 +46,7 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         );
 
         gameOverPanel = new GameOverPanel(
-            "invaders",
+            "spaceinvaders",
             this::restartFromGameOver,
             this::returnToMenuFromGameOver
         );
