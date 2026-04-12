@@ -31,6 +31,8 @@ import javax.swing.SwingUtilities;
  */
 public class Board extends JPanel {
 
+    private static boolean firstEntryInstructionsSeen;
+
     @FunctionalInterface
     public interface GameOverHandler {
         void onGameOver(String resultText, int score, String runToken);
@@ -135,7 +137,7 @@ public class Board extends JPanel {
         inGame = true;
         paused = false;
         showingInstructionsCard = false;
-        firstEntryInstructionsPending = true;
+        firstEntryInstructionsPending = !firstEntryInstructionsSeen;
         suppressPauseUntilMs = 0L;
         message = "Game Over!";
         gameOverOverlayShown = false;
@@ -648,6 +650,8 @@ public class Board extends JPanel {
     {
         if (firstEntryInstructionsPending)
         {
+            firstEntryInstructionsPending = false;
+            firstEntryInstructionsSeen = true;
             showInstructionsCard();
         }
     }
