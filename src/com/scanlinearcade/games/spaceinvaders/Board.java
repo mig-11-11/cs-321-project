@@ -1,6 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameSettings;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -73,24 +74,26 @@ public class Board extends JPanel {
     private boolean firstEntryInstructionsPending;
     private long suppressPauseUntilMs;
     private String currentRunToken;
+    private GameSettings settings;
 
     /**
      * runs board and sets game components on board
      */
     public Board() {
-        this(null, null);
+        this(null, null, null);
     }
 
     public Board(Runnable returnToHubAction) 
     {
-        this(returnToHubAction, null);
+        this(returnToHubAction, null, null);
     }
 
-    public Board(Runnable returnToHubAction, GameOverHandler gameOverHandler)
+    public Board(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings)
     {
 
         this.returnToHubAction = returnToHubAction;
         this.gameOverHandler = gameOverHandler;
+        this.settings = settings;
 
         initBoard();
         
@@ -232,7 +235,7 @@ public class Board extends JPanel {
         int offsetX = (panelW - drawW) / 2;
         int offsetY = (panelH - drawH) / 2;
 
-        g2.setColor(Color.BLACK);
+        g2.setColor(settings.getDisplayColor()); //changes color based on display settings
         g2.fillRect(0, 0, panelW, panelH);
 
         g2.translate(offsetX, offsetY);
@@ -437,7 +440,7 @@ public class Board extends JPanel {
 
             if (!bomb.isDestroyed()) {
 
-                bomb.setY(bomb.getY() + 1);
+                bomb.setY(bomb.getY() + (int)settings.getDifficultyScale(1) + 1); //altered this for difficulty settings
 
                 if (bomb.getY() >= Commons.GROUND - Commons.BOMB_HEIGHT) {
 
@@ -660,6 +663,11 @@ public class Board extends JPanel {
     public boolean shouldSuppressPauseToggle()
     {
         return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
+    }
+    
+    public void setDifficultyScale(GameSettings settings)
+    {
+        this.settings = settings;
     }
     
 }

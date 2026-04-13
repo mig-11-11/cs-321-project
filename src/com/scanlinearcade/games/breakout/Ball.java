@@ -9,6 +9,7 @@
 //*****************************************************************************************************
 package com.scanlinearcade.games.breakout;
 
+import com.scanlinearcade.app.GameSettings;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -50,6 +51,7 @@ public class Ball {
 	private double speed;
 	private double speedStep;
 	private double maxSpeed;
+        private GameSettings settings;
 
 	/**
 	 * Creates a ball and initializes it to the provided starting position.
@@ -59,11 +61,12 @@ public class Ball {
 	 * @param startY initial y-coordinate of the ball center
 	 * @param radius radius of the ball in pixels
 	 */
-	public Ball(int startX, int startY, int radius) {
+	public Ball(int startX, int startY, int radius, GameSettings settings) {
+                this.settings = settings;
 		this.radius = radius;
-		this.speed = 6.0;
+		this.speed = 6.0 * settings.getDifficultyScale(2);
 		this.speedStep = 0.2;
-		this.maxSpeed = 12.0;
+		this.maxSpeed = 12.0 * settings.getDifficultyScale(2);
 		reset(startX, startY);
 	}
 
@@ -82,7 +85,7 @@ public class Ball {
 		this.x = startX;
 		this.y = startY;
 		if (resetSpeed) {
-			this.speed = 6.0;
+			this.speed = 6.0 * settings.getDifficultyScale(2);
 		}
 		setRandomLaunchDirection();
 	}

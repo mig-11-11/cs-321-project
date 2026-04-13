@@ -7,7 +7,10 @@ package com.scanlinearcade.games.breakout;
 import com.scanlinearcade.app.ArcadeGame;
 import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.GameSettings;
+import com.scanlinearcade.app.MusicPlayer;
 import com.scanlinearcade.app.PausePanel;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 import javax.swing.*;
 import java.awt.event.HierarchyEvent;
@@ -21,13 +24,14 @@ public class BreakoutGameAdapter implements ArcadeGame
     private final GameOverPanel gameOverPanel;
     private final Runnable onExitToMenu;
     private final GameSettings settings;
+    private final MusicPlayer musicPlayer;
 
-
-    public BreakoutGameAdapter(GameSettings settings, Runnable onExitToMenu)
+    public BreakoutGameAdapter(GameSettings settings, MusicPlayer musicPlayer, Runnable onExitToMenu)
     {
         this.settings = settings;
+        this.musicPlayer = musicPlayer;
         this.onExitToMenu = onExitToMenu;
-        panel = new BreakPanel(onExitToMenu, this::showGameOver);
+        panel = new BreakPanel(onExitToMenu, this::showGameOver, settings);
         
         //Makes game controls still work
         panel.addHierarchyListener(e -> {
@@ -76,6 +80,8 @@ public class BreakoutGameAdapter implements ArcadeGame
         });
 
         setupPauseKey();
+        
+        addMusicListener();
     }
 
 
@@ -114,6 +120,18 @@ public class BreakoutGameAdapter implements ArcadeGame
                 }
             });
         }
+        
+    private void addMusicListener()
+    {   
+        gameOverPanel.addComponentListener(new ComponentAdapter() 
+        {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                // Code to start music
+                musicPlayer.playMusic("src/com/scanlinearcade/assets/music/gameover.wav"); 
+            }
+        });
+    }
 
     private void showGameOver(String resultText, int score, String runToken)
     {
@@ -161,6 +179,7 @@ public class BreakoutGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
+        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/breakout.wav"); 
     }
 
     private void returnToMenuFromGameOver()

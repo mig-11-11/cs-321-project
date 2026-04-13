@@ -11,6 +11,7 @@
 package com.scanlinearcade.games.snake;
 
 import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameSettings;
 import java.awt.*;
 import java.awt.Window;
 import java.awt.event.KeyAdapter;
@@ -116,10 +117,11 @@ private static final int HUD_HEIGHT = 48; // slightly taller HUD bar
     private boolean firstEntryInstructionsPending;
     private long suppressPauseUntilMs;
     private String currentRunToken;
+    private GameSettings settings;
 
     public SnakePanel() 
     {
-        this(null, null);
+        this(null, null, null);
     }
 
     
@@ -136,10 +138,10 @@ private static final int HUD_HEIGHT = 48; // slightly taller HUD bar
     
     public SnakePanel(Runnable returnToHubAction)
     {
-        this(returnToHubAction, null);
+        this(returnToHubAction, null, null);
     }
 
-    public SnakePanel(Runnable returnToHubAction, GameOverHandler gameOverHandler) 
+    public SnakePanel(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings) 
     {
         setBackground(Color.BLACK);
         setFocusable(true);
@@ -151,10 +153,11 @@ private static final int HUD_HEIGHT = 48; // slightly taller HUD bar
         this.showingInstructionsCard = false;
         this.firstEntryInstructionsPending = true;
         this.suppressPauseUntilMs = 0L;
+        this.settings = settings;
 
         // Game loop, updates the model then repaints the panel
        
-        timer = new Timer(FPS_MS,e -> 
+        timer = new Timer(FPS_MS,e ->    //change this for settings difficulty
         {
             if (!paused)
             {
@@ -356,7 +359,7 @@ protected void paintComponent(Graphics g)
     int offsetY = (panelH - drawH) / 2;
 
     // Fill outer background
-    g2.setColor(OUTER_BG);
+    g2.setColor(settings.getDisplayColor());  //changes color based on display settings
     g2.fillRect(0, 0, panelW, panelH);
 
     // Move and scale into place
@@ -483,6 +486,10 @@ protected void paintComponent(Graphics g)
     {
         if(!timer.isRunning())
         {
+            int speed = FPS_MS;
+            double scale = speed / settings.getDifficultyScale(0);
+            timer.setDelay((int)scale); //sets speed based on difficulty
+        
             timer.start();
         }
         requestFocusInWindow();

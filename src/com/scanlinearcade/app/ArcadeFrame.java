@@ -8,6 +8,8 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.swing.BorderFactory;
@@ -16,10 +18,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import java.io.File;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 
 
 public class ArcadeFrame extends JFrame
@@ -27,6 +25,10 @@ public class ArcadeFrame extends JFrame
     private static final String MENU_CARD = "menu";
     private static final String SCORES_CARD = "scores";
     private static final String SETTINGS_CARD = "settings";
+    
+    private static final String INVADERS_MUSICPATH = "src/com/scanlinearcade/assets/music/spaceinvaders.wav";
+    private static final String BREAKOUT_MUSICPATH = "src/com/scanlinearcade/assets/music/breakout.wav";
+    private static final String SNAKE_MUSICPATH = "src/com/scanlinearcade/assets/music/snake.wav";
 
     private final GameSettings settings = new GameSettings();
     
@@ -36,6 +38,9 @@ public class ArcadeFrame extends JFrame
     private final Map<String, ArcadeGame> games = new LinkedHashMap<>();
     
     private final HighScoresPanel highScoresPanel = new HighScoresPanel(this::showMenu);
+    
+    private final MusicPlayer musicPlayer = new MusicPlayer(settings);
+    private boolean inSettingsHighScore = false;
 
     public ArcadeFrame()
     {
@@ -46,9 +51,9 @@ public class ArcadeFrame extends JFrame
         registerGames();
 
         MenuPanel menuPanel = new MenuPanel(
-            () -> showGame("snake"),
-            () -> showGame("breakout"),
-            () -> showGame("invaders"),
+            () -> showGame("snake", SNAKE_MUSICPATH),
+            () -> showGame("breakout", BREAKOUT_MUSICPATH),
+            () -> showGame("invaders", INVADERS_MUSICPATH),
             this::showScores,
             this::showSettings
         );
@@ -83,18 +88,18 @@ public class ArcadeFrame extends JFrame
 
         showMenu();
         
-        String filepath = "src/com/scanlinearcade/assets/music/boogie-pecan-pie-main-version-41135-02-14.wav";
-        PlayMusic(filepath);
+        initialMusicPlay();
+        addMusicListener(menuPanel);
     }
 
     private void registerGames()
     {
-        games.put("snake", new SnakeGameAdapter(settings, () -> returnFromGame("snake")));
-        games.put("breakout", new BreakoutGameAdapter(settings, () -> returnFromGame("breakout")));
-        games.put("invaders", new SpaceInvadersGameAdapter(settings, () -> returnFromGame("invaders")));
+        games.put("snake", new SnakeGameAdapter(settings, musicPlayer, () -> returnFromGame("snake")));
+        games.put("breakout", new BreakoutGameAdapter(settings, musicPlayer, () -> returnFromGame("breakout")));
+        games.put("invaders", new SpaceInvadersGameAdapter(settings, musicPlayer, () -> returnFromGame("invaders")));
     }
 
-    private void showGame(String cardName)
+    private void showGame(String cardName, String musicPath)
     {
         ArcadeGame game = games.get(cardName);
 
@@ -107,6 +112,8 @@ public class ArcadeFrame extends JFrame
         cardLayout.show(cards, cardName);
         game.startGameLoop();
         game.getView().requestFocusInWindow();
+        
+        musicPlayer.playMusic(musicPath);
     }
 
     private void returnFromGame(String cardName)
@@ -130,19 +137,21 @@ public class ArcadeFrame extends JFrame
 
     private void showScores()
     {
+        inSettingsHighScore = true;
         highScoresPanel.refreshScores();
         cardLayout.show(cards, SCORES_CARD);
     }
 
     private void showSettings()
     {
+        inSettingsHighScore = true;
         cardLayout.show(cards, SETTINGS_CARD);
     }
 
     private JPanel createGameScreen(String title, JComponent content, Runnable onReturn)
     {
         JPanel screen = new JPanel(new BorderLayout());
-        screen.setBackground(Color.BLACK);
+        screen.setBackground(Color.black);
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(new Color(15, 15, 25));
@@ -158,7 +167,7 @@ public class ArcadeFrame extends JFrame
         topBar.add(titleLabel, BorderLayout.CENTER);
 
         JPanel centerWrapper = new JPanel(new BorderLayout());
-        centerWrapper.setBackground(Color.BLACK);
+        centerWrapper.setBackground(settings.getDisplayColor());  //settings gameplay selection
         centerWrapper.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         centerWrapper.add(content, BorderLayout.CENTER);
 
@@ -167,31 +176,32 @@ public class ArcadeFrame extends JFrame
 
         return screen;
     }
-
     
-    
-    public static void PlayMusic(String location)
+    private void initialMusicPlay()
     {
-        try
+        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav"); 
+    }
+
+    private void addMusicListener(MenuPanel menuPanel)
+    {
+        
+        menuPanel.addComponentListener(new ComponentAdapter() 
         {
-            File musicPath = new File(location);
-            
-            if(musicPath.exists())
+            @Override
+            public void componentShown(ComponentEvent e) 
             {
-                AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicPath);
-                Clip clip = AudioSystem.getClip();
-                clip.open(audioInput);
-                clip.start();
-                clip.loop(Clip.LOOP_CONTINUOUSLY);
+                if(inSettingsHighScore == true) //so mainmenu.wav doesn't restart after leaving Settings or High Score menus
+                {
+                    inSettingsHighScore = false;
+                }
+                
+                else
+                {
+                    // Code to start music
+                    musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav");
+                }
             }
-            else
-            {
-                System.out.println("Cant find file");
-            }
-        }
-        catch(Exception e)
-        {
-            System.out.println(e);
-        }
+        });
+        
     }
 }

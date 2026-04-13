@@ -10,6 +10,7 @@
 package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameSettings;
 import java.awt.*;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -99,26 +100,28 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
 	private final GameOverHandler gameOverHandler;
 	private int clearedBoards;
 	private String currentRunToken;
+        private GameSettings settings;
 
 	/**
 	 * Creates the panel, initializes game state, and starts the update timer.
 	 * Signature: {@code public BreakPanel()}
 	 */
 	public BreakPanel() {
-		this(null, null);
+		this(null, null, null);
 	}
 
 	public BreakPanel(Runnable returnToHubAction) {
-		this(returnToHubAction, null);
+		this(returnToHubAction, null, null);
 	}
 
-	public BreakPanel(Runnable returnToHubAction, GameOverHandler gameOverHandler) {
+	public BreakPanel(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings) {
 		setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
 		setBackground(Color.BLACK);
 		setFocusable(true);
 		addKeyListener(this);
 		this.returnToHubAction = returnToHubAction;
 		this.gameOverHandler = gameOverHandler;
+                this.settings = settings;
 
 		timer = new Timer(16, this);
 		initGame();
@@ -156,7 +159,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
         private void resetRound() {
             paddle = new Paddle(PANEL_WIDTH / 2 - 45, BOARD_HEIGHT - 40, 90, 12);
             if (ball == null) {
-                ball = new Ball(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, 8);
+                ball = new Ball(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, 8, settings);
                 return;
             }
             ball.reset(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, false);
@@ -273,7 +276,7 @@ private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
             int offsetY = (panelH - drawH) / 2;
 
             // Outer background
-            g2.setColor(Color.BLACK);
+            g2.setColor(settings.getDisplayColor());  //change this for settings display option
             g2.fillRect(0, 0, panelW, panelH);
 
             // Move / scale into logical space
