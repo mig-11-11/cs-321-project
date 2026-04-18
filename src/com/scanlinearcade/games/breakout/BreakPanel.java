@@ -71,17 +71,17 @@ public static final int PANEL_HEIGHT = BOARD_HEIGHT + HUD_HEIGHT;
 // HUD colors
 private static final Color HUD_BG = new Color(58, 58, 62);
 private static final Color HUD_TEXT = new Color(235, 235, 235);
-private static final Color HUD_ACCENT = new Color(0, 255, 200);
+private static final Color HUD_ACCENT = new Color(90, 180, 255);
 
 // Border color
-private static final Color BOARD_BORDER = new Color(0, 255, 200, 170);
+private static final Color BOARD_BORDER = new Color(90, 180, 255, 235);
 
 // Instruction card colors
 private static final Color INSTRUCTION_DIM = new Color(0, 0, 0, 110);
-private static final Color INSTRUCTION_BOX_BG = new Color(10, 16, 30, 220);
-private static final Color INSTRUCTION_BOX_BORDER = new Color(0, 255, 200, 120);
-private static final Color INSTRUCTION_TITLE = new Color(230, 245, 255);
-private static final Color INSTRUCTION_TEXT = new Color(220, 225, 230);
+private static final Color INSTRUCTION_BOX_BG = new Color(30, 8, 45, 224);
+private static final Color INSTRUCTION_BOX_BORDER = new Color(110, 170, 255, 170);
+private static final Color INSTRUCTION_TITLE = new Color(255, 215, 250);
+private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 
 	private Ball ball;
 	private Paddle paddle;

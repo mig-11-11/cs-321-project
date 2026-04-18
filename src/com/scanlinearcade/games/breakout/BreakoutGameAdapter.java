@@ -1,7 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+//*****************************************************************************************************
+// 
+// Program Title: BreakoutGameAdapter.java
+// Project File: Breakout
+// Name: Matteo Gomez
+// Course Section: CS321-01 
+// Date (MM/YYYY): 03/2026
+//
+//*****************************************************************************************************
 package com.scanlinearcade.games.breakout;
 
 import com.scanlinearcade.app.ArcadeGame;
