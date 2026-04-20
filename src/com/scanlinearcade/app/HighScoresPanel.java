@@ -1,3 +1,12 @@
+//*****************************************************************************************************
+// 
+// Program Title: HighScoresPanel.java
+// Project File: App
+// Name: Braden Gant
+// Course Section: CS321-01 
+// Date (MM/YYYY): 04/2026
+//
+//*****************************************************************************************************
 package com.scanlinearcade.app;
 
 import java.awt.BorderLayout;
@@ -19,8 +28,19 @@ import javax.swing.SwingConstants;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 
 /**
- * Dedicated high score screen for Scanline Arcade.
- * Displays a tab for each game and shows the saved leaderboard entries.
+ * UI Panel Class: HighScoresPanel
+ *
+ * <p>Intent: Displays a comprehensive high scores leaderboard screen with tabbed navigation
+ * for each arcade game. Presents ranked scores with player names, formatted as arcade-style
+ * display cards with color-coded highlighting for top scores and alternating row colors.
+ *
+ * <p>Public API Signatures:
+ * <ul>
+ *   <li>{@code public HighScoresPanel(Runnable onBackToMenu)}</li>
+ *   <li>{@code public void refreshScores()}</li>
+ * </ul>
+ *
+ * <p>Package-private API Signatures: None in current implementation.
  */
 public class HighScoresPanel extends JPanel
 {
@@ -44,6 +64,12 @@ public class HighScoresPanel extends JPanel
     private final JPanel breakoutTab;
     private final JPanel invadersTab;
 
+    /**
+     * Creates a high scores panel with tabbed game leaderboards.
+     * Signature: {@code public HighScoresPanel(Runnable onBackToMenu)}
+     *
+     * @param onBackToMenu callback invoked when the back button is clicked
+     */
     public HighScoresPanel(Runnable onBackToMenu)
     {
         this.onBackToMenu = onBackToMenu;
@@ -77,6 +103,10 @@ public class HighScoresPanel extends JPanel
         refreshScores();
     }
 
+    /**
+     * Refreshes the leaderboards for all games from persistent storage.
+     * Signature: {@code public void refreshScores()}
+     */
     public void refreshScores()
     {
         rebuildTab(
@@ -101,6 +131,12 @@ public class HighScoresPanel extends JPanel
         repaint();
     }
 
+    /**
+     * Creates the header panel with title and back button.
+     * Signature: {@code private JPanel createHeaderPanel()}
+     *
+     * @return formatted header panel
+     */
     private JPanel createHeaderPanel()
     {
         JPanel header = new JPanel(new BorderLayout());
@@ -132,6 +168,13 @@ public class HighScoresPanel extends JPanel
         return header;
     }
 
+    /**
+     * Creates a scrollable tab page wrapping a score card display.
+     * Signature: {@code private JScrollPane createTabPage(JPanel scoreCard)}
+     *
+     * @param scoreCard the score card panel to wrap
+     * @return scrollable container for the score card
+     */
     private JScrollPane createTabPage(JPanel scoreCard)
     {
         JPanel page = new JPanel(new BorderLayout());
@@ -152,6 +195,12 @@ public class HighScoresPanel extends JPanel
         return scrollPane;
     }
 
+    /**
+     * Creates an empty score card panel with arcade styling and scanline effect.
+     * Signature: {@code private JPanel createScoreCard()}
+     *
+     * @return formatted score card panel ready for score row content
+     */
     private JPanel createScoreCard()
     {
         JPanel panel = new JPanel()
@@ -180,6 +229,14 @@ public class HighScoresPanel extends JPanel
         return panel;
     }
 
+    /**
+     * Populates a tab panel with game title, header row, and formatted score entries.
+     * Signature: {@code private void rebuildTab(JPanel tabPanel, String gameTitle, List<HighScoreStore.ScoreEntry> scores)}
+     *
+     * @param tabPanel panel to populate with score data
+     * @param gameTitle title of the game for display
+     * @param scores list of score entries to display
+     */
     private void rebuildTab(
         JPanel tabPanel,
         String gameTitle,
@@ -234,6 +291,12 @@ public class HighScoresPanel extends JPanel
         }
     }
 
+    /**
+     * Creates the header row for score table columns (Rank, Name, Score).
+     * Signature: {@code private JPanel createHeaderRow()}
+     *
+     * @return formatted header row panel
+     */
     private JPanel createHeaderRow()
     {
         JPanel row = new JPanel(new BorderLayout(18, 0));
@@ -256,6 +319,17 @@ public class HighScoresPanel extends JPanel
         return row;
     }
 
+    /**
+     * Creates a formatted row for a single score entry with rank, name, and score.
+     * Signature: {@code private JPanel createScoreRow(String rank, String name, String score, boolean highlight, boolean striped)}
+     *
+     * @param rank rank number or label
+     * @param name player name
+     * @param score player score
+     * @param highlight if {@code true}, uses gold color for top rank highlighting
+     * @param striped if {@code true}, uses alternating background color for visual separation
+     * @return formatted score row panel
+     */
     private JPanel createScoreRow(
         String rank,
         String name,
@@ -288,6 +362,16 @@ public class HighScoresPanel extends JPanel
         return row;
     }
 
+    /**
+     * Creates a styled label for use in score row or header row.
+     * Signature: {@code private JLabel createRowLabel(String text, Color color, int fontSize, int alignment)}
+     *
+     * @param text text to display
+     * @param color text color
+     * @param fontSize font size in points
+     * @param alignment text alignment (e.g., SwingConstants.LEFT, RIGHT)
+     * @return formatted label
+     */
     private JLabel createRowLabel(String text, Color color, int fontSize, int alignment)
     {
         JLabel label = new JLabel(text, alignment);
@@ -296,6 +380,10 @@ public class HighScoresPanel extends JPanel
         return label;
     }
 
+    /**
+     * Custom UI delegate for arcade-styled tabbed panes.
+     * Provides customized tab appearance and behavior for the arcade theme.
+     */
     private static class ArcadeTabbedPaneUI extends BasicTabbedPaneUI
     {
         @Override

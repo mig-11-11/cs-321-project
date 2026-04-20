@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * <p>Public API Signatures:
  * <ul>
- *   <li>{@code public Ball(int startX, int startY, int radius)}</li>
+ *   <li>{@code public Ball(int startX, int startY, int radius, GameSettings settings)}</li>
  *   <li>{@code public void reset(int startX, int startY)}</li>
  *   <li>{@code public void reset(int startX, int startY, boolean resetSpeed)}</li>
  *   <li>{@code public boolean update(Rectangle bounds, Paddle paddle, Bricks bricks, BreakoutScore score)}</li>
@@ -62,11 +62,12 @@ public class Ball {
 
 	/**
 	 * Creates a ball and initializes it to the provided starting position.
-	 * Signature: {@code public Ball(int startX, int startY, int radius)}
+	 * Signature: {@code public Ball(int startX, int startY, int radius, GameSettings settings)}
 	 *
 	 * @param startX initial x-coordinate of the ball center
 	 * @param startY initial y-coordinate of the ball center
 	 * @param radius radius of the ball in pixels
+	 * @param settings game settings for difficulty scaling
 	 */
 	public Ball(int startX, int startY, int radius, GameSettings settings) {
                 this.settings = settings;
@@ -88,6 +89,14 @@ public class Ball {
 		reset(startX, startY, true);
 	}
 
+	/**
+	 * Resets the ball to the provided position with optional speed reset.
+	 * Signature: {@code public void reset(int startX, int startY, boolean resetSpeed)}
+	 *
+	 * @param startX x-coordinate of the reset position
+	 * @param startY y-coordinate of the reset position
+	 * @param resetSpeed if {@code true}, resets speed to initial value; if {@code false}, preserves current speed
+	 */
 	public void reset(int startX, int startY, boolean resetSpeed) {
 		this.x = startX;
 		this.y = startY;
@@ -214,6 +223,10 @@ public class Ball {
 		return dy;
 	}
 
+	/**
+	 * Increases the ball speed for the next level.
+	 * Signature: {@code public void increaseLevelSpeed()}
+	 */
 	public void increaseLevelSpeed() {
 		increaseSpeed();
 	}

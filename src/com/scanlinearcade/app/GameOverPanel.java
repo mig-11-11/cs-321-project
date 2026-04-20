@@ -1,3 +1,12 @@
+//*****************************************************************************************************
+// 
+// Program Title: GameOverPanel.java
+// Project File: App
+// Name: Matteo Gomez
+// Course Section: CS321-01 
+// Date (MM/YYYY): 04/2026
+//
+//*****************************************************************************************************
 package com.scanlinearcade.app;
 
 import java.awt.BorderLayout;
@@ -23,6 +32,21 @@ import javax.swing.KeyStroke;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+/**
+ * UI Panel Class: GameOverPanel
+ *
+ * <p>Intent: Displays game over results including final score, high scores leaderboard,
+ * and options for score submission, game restart, or return to main hub. Integrates with
+ * {@code HighScoreStore} to persist and display player scores.
+ *
+ * <p>Public API Signatures:
+ * <ul>
+ *   <li>{@code public GameOverPanel(String gameKey, Runnable onRestart, Runnable onReturnToHub)}</li>
+ *   <li>{@code public void showResult(String resultText, int score, String runToken)}</li>
+ * </ul>
+ *
+ * <p>Package-private API Signatures: None in current implementation.
+ */
 public class GameOverPanel extends JPanel {
 
     private final String gameKey;
@@ -39,6 +63,14 @@ public class GameOverPanel extends JPanel {
     private int score;
     private boolean scoreSaved;
 
+    /**
+     * Creates a game over panel with result display and score submission UI.
+     * Signature: {@code public GameOverPanel(String gameKey, Runnable onRestart, Runnable onReturnToHub)}
+     *
+     * @param gameKey unique identifier for the game (e.g., "breakout", "snake", "spaceinvaders")
+     * @param onRestart callback invoked when the restart button is clicked
+     * @param onReturnToHub callback invoked when the return to hub button is clicked
+     */
     public GameOverPanel(String gameKey, Runnable onRestart, Runnable onReturnToHub) {
         this.gameKey = gameKey;
         this.onRestart = onRestart;
@@ -153,6 +185,15 @@ public class GameOverPanel extends JPanel {
         hubButton.setFocusable(false);
     }
 
+    /**
+     * Displays the game over result with final score and high scores list.
+     * Updates the UI for score submission and shows relevant controls.
+     * Signature: {@code public void showResult(String resultText, int score, String runToken)}
+     *
+     * @param resultText message to display (e.g., "You Win!", "Game Over!")
+     * @param score final score achieved in this game session
+     * @param runToken unique session identifier to prevent duplicate score submissions
+     */
     public void showResult(String resultText, int score, String runToken) {
         this.score = score;
         this.runToken = runToken;
@@ -171,6 +212,10 @@ public class GameOverPanel extends JPanel {
         requestFocusInWindow();
     }
 
+    /**
+     * Refreshes the high scores list displayed on the panel.
+     * Signature: {@code private void refreshHighScores()}
+     */
     private void refreshHighScores() {
         listModel.clear();
 
@@ -187,6 +232,11 @@ public class GameOverPanel extends JPanel {
         }
     }
 
+    /**
+     * Submits the current score to the high score store if not already saved.
+     * Uses the player name from the input field if provided.
+     * Signature: {@code private void saveScoreIfNeeded()}
+     */
     private void saveScoreIfNeeded() {
         if (scoreSaved) {
             return;

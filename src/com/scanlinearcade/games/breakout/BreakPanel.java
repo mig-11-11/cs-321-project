@@ -29,18 +29,29 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 /**
- * Class Outline: BreakPanel
+ * View Class: BreakPanel
  *
  * <p>Intent: Coordinates the playable Breakout screen by managing the frame timer,
  * input state, game update cycle, and rendering pipeline for game entities and
- * end-state messages.
+ * end-state messages. Also manages pause state, instructions overlay, and lifecycle.
  *
  * <p>Public API Signatures:
  * <ul>
  *   <li>{@code public BreakPanel()}</li>
+ *   <li>{@code public BreakPanel(Runnable returnToHubAction)}</li>
+ *   <li>{@code public BreakPanel(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings)}</li>
  *   <li>{@code public void actionPerformed(ActionEvent e)}</li>
  *   <li>{@code public void keyPressed(KeyEvent e)}</li>
  *   <li>{@code public void keyReleased(KeyEvent e)}</li>
+ *   <li>{@code public void keyTyped(KeyEvent e)}</li>
+ *   <li>{@code public void endGame()}</li>
+ *   <li>{@code public void startGameLoop()}</li>
+ *   <li>{@code public void stopGameLoop()}</li>
+ *   <li>{@code public void resetGame()}</li>
+ *   <li>{@code public void showInstructionsCard()}</li>
+ *   <li>{@code public void showFirstEntryInstructionsIfPending()}</li>
+ *   <li>{@code public boolean isShowingInstructionsCard()}</li>
+ *   <li>{@code public boolean shouldSuppressPauseToggle()}</li>
  * </ul>
  *
  * <p>Package-private API Signatures: None in current implementation.
@@ -49,17 +60,27 @@ import javax.swing.Timer;
  * <ul>
  *   <li>{@code private void initGame()}</li>
  *   <li>{@code private void resetRound()}</li>
+ *   <li>{@code private void spawnFreshBoard()}</li>
+ *   <li>{@code private void advanceToNextBoard()}</li>
  *   <li>{@code protected void paintComponent(Graphics g)}</li>
  *   <li>{@code private void drawCenteredText(Graphics2D g2, String text, int y, int size)}</li>
+ *   <li>{@code private void drawCenteredLine(Graphics2D g2, String text, int y)}</li>
  * </ul>
- *
- * Goals:
- * - Add pausing functionality (variable isPaused)
  */
 public class BreakPanel extends JPanel implements ActionListener, KeyListener {
 
+	/**
+	 * Functional interface for handling game over events.
+	 */
 	@FunctionalInterface
 	public interface GameOverHandler {
+		/**
+		 * Called when the game ends.
+		 *
+		 * @param resultText result message (e.g., "You Win!" or "Game Over!")
+		 * @param score final score
+		 * @param runToken unique session identifier
+		 */
 		void onGameOver(String resultText, int score, String runToken);
 	}
 
@@ -103,17 +124,31 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
         private GameSettings settings;
 
 	/**
-	 * Creates the panel, initializes game state, and starts the update timer.
+	 * Creates a standalone breakout panel without callbacks (for demo mode).
 	 * Signature: {@code public BreakPanel()}
 	 */
 	public BreakPanel() {
 		this(null, null, null);
 	}
 
+	/**
+	 * Creates a breakout panel with a hub return callback.
+	 * Signature: {@code public BreakPanel(Runnable returnToHubAction)}
+	 *
+	 * @param returnToHubAction callback to execute when returning to the main hub
+	 */
 	public BreakPanel(Runnable returnToHubAction) {
 		this(returnToHubAction, null, null);
 	}
 
+	/**
+	 * Creates a fully configured breakout panel with game over and settings callbacks.
+	 * Signature: {@code public BreakPanel(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings)}
+	 *
+	 * @param returnToHubAction callback to execute when returning to the main hub
+	 * @param gameOverHandler handler to call when the game ends
+	 * @param settings game settings for difficulty and display configuration
+	 */
 	public BreakPanel(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings) {
 		setPreferredSize(new Dimension(PANEL_WIDTH, PANEL_HEIGHT));
 		setBackground(Color.BLACK);
@@ -148,6 +183,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		}
 	}
 
+	/**
+	 * Creates a fresh brick board for the current level.
+	 * Signature: {@code private void spawnFreshBoard()}
+	 */
 	private void spawnFreshBoard() {
 		bricks = new Bricks(5, 10, PANEL_WIDTH, 60);
 	}
@@ -165,6 +204,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
             ball.reset(PANEL_WIDTH / 2, BOARD_HEIGHT - 60, false);
         }
 
+	/**
+	 * Advances to the next board after all bricks are cleared. Increments difficulty and resets round.
+	 * Signature: {@code private void advanceToNextBoard()}
+	 */
 	private void advanceToNextBoard() {
 		clearedBoards++;
 		spawnFreshBoard();
@@ -211,6 +254,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		repaint();
 	}
 
+	/**
+	 * Returns to the hub/main menu from a dialog state. Called from pause or game over handlers.
+	 * Signature: {@code private void returnToHubFromDialog()}
+	 */
 	private void returnToHubFromDialog() {
 		if (returnToHubAction != null) {
 			returnToHubAction.run();
@@ -224,6 +271,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		}
 	}
 
+	/**
+	 * Restarts the game from a dialog state. Called from pause or game over handlers.
+	 * Signature: {@code private void restartFromDialog()}
+	 */
 	private void restartFromDialog() {
 		resetGame();
 		paused = false;
@@ -233,6 +284,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		startGameLoop();
 	}
 
+	/**
+	 * Stops game execution and clears input state. Called when exiting the game.
+	 * Signature: {@code public void endGame()}
+	 */
 	public void endGame() {
 		running = false;
 		paused = false;
@@ -382,10 +437,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 	}
 
 	/**
-	 * Not used for this panel.
+	 * Unused {@code KeyListener} interface method.
 	 * Signature: {@code public void keyTyped(KeyEvent e)}
 	 *
-	 * @param e key event
+	 * @param e key event (unused)
 	 */
 	@Override
 	public void keyTyped(KeyEvent e) {
@@ -456,12 +511,26 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
         
         
         
+            /**
+             * Draws text centered horizontally on the panel.
+             * Signature: {@code private void drawCenteredLine(Graphics2D g2, String text, int y)}
+             *
+             * @param g2 graphics context
+             * @param text text to draw
+             * @param y y-coordinate baseline
+             */
             private void drawCenteredLine(Graphics2D g2, String text, int y) 
             {
                 int x = (PANEL_WIDTH - g2.getFontMetrics().stringWidth(text)) / 2;
                 g2.drawString(text, x, y);
             }
             
+            /**
+             * Checks whether the instructions card is currently displayed.
+             * Signature: {@code public boolean isShowingInstructionsCard()}
+             *
+             * @return {@code true} if instructions card is visible, {@code false} otherwise
+             */
             public boolean isShowingInstructionsCard() 
             {
                 return showingInstructionsCard;
@@ -490,7 +559,11 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
         
         
         
-    public void startGameLoop()
+/**
+	 * Starts the game update timer and requests focus for input handling.
+	 * Signature: {@code public void startGameLoop()}
+	 */
+	public void startGameLoop()
     {
         if (!timer.isRunning())
         {
@@ -499,6 +572,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
         requestFocusInWindow();
     }
 
+    /**
+     * Stops the game update timer.
+     * Signature: {@code public void stopGameLoop()}
+     */
     public void stopGameLoop()
     {
         if (timer.isRunning())
@@ -507,6 +584,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
         }
     }
 
+	/**
+	 * Resets the game to initial state including score, lives, and game board.
+	 * Signature: {@code public void resetGame()}
+	 */
 	public void resetGame()
 	{
 		if (timer.isRunning())
@@ -532,6 +613,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		repaint();
 	}
 
+	/**
+	 * Displays the instructions overlay card, pausing gameplay.
+	 * Signature: {@code public void showInstructionsCard()}
+	 */
 	public void showInstructionsCard()
 	{
 		if (!running)
@@ -546,6 +631,10 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		repaint();
 	}
 
+	/**
+	 * Shows the instructions card on first entry to the game if pending.
+	 * Signature: {@code public void showFirstEntryInstructionsIfPending()}
+	 */
 	public void showFirstEntryInstructionsIfPending()
 	{
 		if (firstEntryInstructionsPending)
@@ -554,6 +643,12 @@ private static final Color INSTRUCTION_TEXT = new Color(235, 205, 245);
 		}
 	}
 
+	/**
+	 * Checks whether pause toggle should be suppressed (e.g., during instructions or immediately after action).
+	 * Signature: {@code public boolean shouldSuppressPauseToggle()}
+	 *
+	 * @return {@code true} if pause should be suppressed, {@code false} otherwise
+	 */
 	public boolean shouldSuppressPauseToggle()
 	{
 		return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
