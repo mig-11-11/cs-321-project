@@ -12,6 +12,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.Window;
@@ -19,11 +20,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
 /**
@@ -64,6 +68,7 @@ public class Board extends JPanel {
     private boolean inGame = true;
     private String explImg = "src/com/scanlinearcade/games/images/explosion.png";
     private String message = "Game Over!";
+    private Image backgroundImage;
 
     private Timer timer;
     private final Runnable returnToHubAction;
@@ -108,6 +113,7 @@ public class Board extends JPanel {
         setFocusable(true);
         setPreferredSize(new Dimension(Commons.BOARD_WIDTH, TOTAL_HEIGHT));
         setBackground(Color.black);
+        setBackgroundImage();
 
         timer = new Timer(Commons.DELAY, new GameCycle());
        
@@ -211,6 +217,14 @@ public class Board extends JPanel {
             }
         }
     }
+ 
+    private void setBackgroundImage() {
+        try {
+            backgroundImage = ImageIO.read(new File("src/com/scanlinearcade/games/images/invadersbacky.png"));
+        } catch (IOException ex) {
+            System.getLogger(Board.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+    }
 
     @Override
     public void paintComponent(Graphics g) {
@@ -254,19 +268,20 @@ public class Board extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g;
 
-        g2.setColor(Color.black);
-        g2.fillRect(0, 0, Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+        //g2.setColor(Color.black);
+        //g2.fillRect(0, 0, Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+        g2.drawImage(backgroundImage, 0, 0, Commons.BOARD_WIDTH, Commons.BOARD_WIDTH, null);
 
         // visible border around the board
         g2.setColor(BOARD_BORDER);
         g2.drawRect(0, 0, Commons.BOARD_WIDTH - 1, Commons.BOARD_HEIGHT - 1);
 
-        g2.setColor(Color.green);
+        //g2.setColor(new Color(0, 255, 200));
 
         if (inGame) {
 
-            g2.drawLine(0, Commons.GROUND,
-                    Commons.BOARD_WIDTH, Commons.GROUND);
+            //g2.drawLine(0, Commons.GROUND,
+                   // Commons.BOARD_WIDTH, Commons.GROUND);
 
             drawAliens(g2);
             drawPlayer(g2);
@@ -487,9 +502,7 @@ public class Board extends JPanel {
         }
     }
 
-    /**
-     * 
-     */
+    
     private class TAdapter extends KeyAdapter {
 
         
