@@ -1,7 +1,12 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+//*****************************************************************************************************
+// 
+// Program Title: MusicPlayer.java
+// Project File: App
+// Name: Justin Campbell
+// Course Section: CS321-01 
+// Date (MM/YYYY): 04/2026
+//
+//*****************************************************************************************************
 package com.scanlinearcade.app;
 
 import java.io.File;
@@ -11,14 +16,33 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 
 /**
+ * Audio Service Class: MusicPlayer
  *
- * @author RayCa
+ * <p>Intent: Manages audio playback for the arcade including background music and sound effects.
+ * Supports continuous looping, volume control with gamma curve adjustment, and integration
+ * with {@code GameSettings} for real-time volume changes via property listeners.
+ *
+ * <p>Public API Signatures:
+ * <ul>
+ *   <li>{@code public MusicPlayer(GameSettings settings)}</li>
+ *   <li>{@code public void playMusic(String musicLocation)}</li>
+ *   <li>{@code public void setVolume(float volume)}</li>
+ * </ul>
+ *
+ * <p>Package-private API Signatures: None in current implementation.
  */
 public class MusicPlayer 
 {
     private Clip clip;
     private float currentVolume = 0.65f;
     
+    /**
+     * Creates a music player and initializes volume from game settings.
+     * Registers a property change listener to respond to volume setting changes.
+     * Signature: {@code public MusicPlayer(GameSettings settings)}
+     *
+     * @param settings game settings containing initial volume and volume change listener support
+     */
     public MusicPlayer(GameSettings settings)
     {
         this.currentVolume = settings.getVolume();
@@ -32,6 +56,13 @@ public class MusicPlayer
         });
     }
 
+    /**
+     * Loads and plays a music file with continuous looping.
+     * If a clip is currently playing, stops it first before loading the new track.
+     * Signature: {@code public void playMusic(String musicLocation)}
+     *
+     * @param musicLocation file path to the audio file to play
+     */
     public void playMusic(String musicLocation) 
     {
         try 
@@ -54,7 +85,13 @@ public class MusicPlayer
         }
     }
 
-    public void setVolume(float volume) // 0.0 → 1.0
+    /**
+     * Adjusts the current clip volume using a gamma curve for perceptual scaling.
+     * Signature: {@code public void setVolume(float volume)}
+     *
+     * @param volume desired volume level (0.0 = silent, 1.0 = maximum); scaled using gamma curve
+     */
+    public void setVolume(float volume)
     {
         if (clip != null)
         {
