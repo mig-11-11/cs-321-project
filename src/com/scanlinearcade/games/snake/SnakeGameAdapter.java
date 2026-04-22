@@ -7,7 +7,10 @@ package com.scanlinearcade.games.snake;
 import com.scanlinearcade.app.ArcadeGame;
 import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.GameSettings;
+import com.scanlinearcade.app.MusicPlayer;
 import com.scanlinearcade.app.PausePanel;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
@@ -24,14 +27,16 @@ public class SnakeGameAdapter implements ArcadeGame
     private final GameOverPanel gameOverPanel;
     private final Runnable returnToHubAction;
     private final GameSettings settings;
+    private final MusicPlayer musicPlayer;
 
-    public SnakeGameAdapter(GameSettings settings, Runnable returnToHubAction)
+    public SnakeGameAdapter(GameSettings settings, MusicPlayer musicPlayer, Runnable returnToHubAction)
     {
         this.settings = settings;
+        this.musicPlayer = musicPlayer;
         this.returnToHubAction = returnToHubAction;
         
 
-        panel = new SnakePanel(returnToHubAction, this::showGameOver);
+        panel = new SnakePanel(returnToHubAction, this::showGameOver, settings);
 
         panel.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && panel.isShowing())
@@ -77,6 +82,8 @@ public class SnakeGameAdapter implements ArcadeGame
         layeredPane.add(gameOverPanel, Integer.valueOf(2));
 
         setupPauseKey();
+        
+        addMusicListener();
     }
 
     private void resumeFromPause()
@@ -129,6 +136,7 @@ public class SnakeGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
+        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/snake.wav");
     }
 
     private void returnToMenuFromGameOver()
@@ -175,6 +183,19 @@ public class SnakeGameAdapter implements ArcadeGame
 
                 pausePanel.setVisible(true);
                 panel.stopGameLoop();
+            }
+        });
+    }
+    
+    private void addMusicListener()
+    {
+        
+        gameOverPanel.addComponentListener(new ComponentAdapter() 
+        {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                // Code to start music
+                musicPlayer.playMusic("src/com/scanlinearcade/assets/music/gameover.wav"); 
             }
         });
     }

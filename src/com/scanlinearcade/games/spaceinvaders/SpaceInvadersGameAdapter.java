@@ -3,7 +3,10 @@ package com.scanlinearcade.games.spaceinvaders;
 import com.scanlinearcade.app.ArcadeGame;
 import com.scanlinearcade.app.GameOverPanel;
 import com.scanlinearcade.app.GameSettings;
+import com.scanlinearcade.app.MusicPlayer;
 import com.scanlinearcade.app.PausePanel;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
@@ -20,13 +23,15 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     private final GameOverPanel gameOverPanel;
     private final Runnable onExitToMenu;
     private final GameSettings settings;
-
-    public SpaceInvadersGameAdapter(GameSettings settings, Runnable onExitToMenu)
+    private final MusicPlayer musicPlayer;
+    
+    public SpaceInvadersGameAdapter(GameSettings settings, MusicPlayer musicPlayer, Runnable onExitToMenu)
     {
         this.settings = settings;
+        this.musicPlayer = musicPlayer;
         this.onExitToMenu = onExitToMenu;
 
-        panel = new Board(onExitToMenu, this::showGameOver);
+        panel = new Board(onExitToMenu, this::showGameOver, this.settings);
 
         panel.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) != 0 && panel.isShowing())
@@ -46,7 +51,7 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         );
 
         gameOverPanel = new GameOverPanel(
-            "invaders",
+            "spaceinvaders",
             this::restartFromGameOver,
             this::returnToMenuFromGameOver
         );
@@ -71,6 +76,8 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         layeredPane.add(gameOverPanel, Integer.valueOf(2));
 
         setupPauseKey();
+        
+        addMusicListener();
     }
 
     private void resumeFromPause()
@@ -120,6 +127,7 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
+        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/spaceinvaders.wav"); 
     }
 
     private void returnToMenuFromGameOver()
@@ -174,7 +182,20 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
              .put(KeyStroke.getKeyStroke("ESCAPE"), "pause");
         panel.getActionMap().put("pause", pauseAction);
     }
-
+    
+    private void addMusicListener()
+    {
+        
+        gameOverPanel.addComponentListener(new ComponentAdapter() 
+        {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                // Code to start music
+                musicPlayer.playMusic("src/com/scanlinearcade/assets/music/gameover.wav"); 
+            }
+        });
+    }
+    
     @Override
     public String getCardName()
     {

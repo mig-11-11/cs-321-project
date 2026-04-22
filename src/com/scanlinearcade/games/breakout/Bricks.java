@@ -34,6 +34,16 @@ import java.awt.Rectangle;
 * - Add durability to bricks in the back rows so they require multiple hits to break, and add a visual indicator of durability (color or cracks)
  */
 public class Bricks {
+	private static final Color[] NEON_ROW_COLORS = {
+		new Color(255, 80, 220),
+		new Color(210, 70, 255),
+		new Color(125, 170, 255),
+		new Color(70, 150, 255),
+		new Color(120, 220, 255)
+	};
+
+	private static final Color BRICK_OUTLINE = new Color(55, 20, 70);
+
 	private boolean[][] alive;
 	private int rows;
 	private int cols;
@@ -138,17 +148,17 @@ public class Bricks {
 	 * @param g2 graphics context
 	 */
 	public void draw(Graphics2D g2) {
-		g2.setColor(new Color(200, 120, 40));
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols; c++) {
 				if (!alive[r][c]) {
 					continue;
 				}
 				Rectangle rect = getBrickRect(r, c);
+				Color fill = NEON_ROW_COLORS[r % NEON_ROW_COLORS.length];
+				g2.setColor(fill);
 				g2.fillRect(rect.x, rect.y, rect.width, rect.height);
-				g2.setColor(Color.BLACK);
+				g2.setColor(BRICK_OUTLINE);
 				g2.drawRect(rect.x, rect.y, rect.width, rect.height);
-				g2.setColor(new Color(200, 120, 40));
 			}
 		}
 	}

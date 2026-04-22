@@ -8,6 +8,8 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.swing.BorderFactory;
@@ -16,17 +18,35 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import java.io.File;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
 
-
+/**
+ * Main Application Frame: ArcadeFrame
+ * 
+ * <p>Intent: Serves as the primary window and controller for the Scanline Arcade
+ * application. Manages navigation between the main menu, individual games,
+ * high scores, and settings using a {@link CardLayout}. Coordinates game lifecycle
+ * events and handles global services such as music playback and configuration.
+ * 
+ * <p>Key Methods:
+ * <ul>
+ *   <li>{@code private void registerGames()}</li>
+ *   <li>{@code private void showGame(String cardName, String musicPath)}</li>
+ *   <li>{@code private void returnFromGame(String cardName)}</li>
+ *   <li>{@code private void showMenu()}</li>
+ *   <li>{@code private void showScores()}</li>
+ *   <li>{@code private void showSettings()}</li>
+ *   <li>{@code private JPanel createGameScreen(String title, JComponent content, Runnable onReturn)}</li>
+ * </ul>
+ */
 public class ArcadeFrame extends JFrame
 {
     private static final String MENU_CARD = "menu";
     private static final String SCORES_CARD = "scores";
     private static final String SETTINGS_CARD = "settings";
+    
+    private static final String INVADERS_MUSICPATH = "src/com/scanlinearcade/assets/music/spaceinvaders.wav";
+    private static final String BREAKOUT_MUSICPATH = "src/com/scanlinearcade/assets/music/breakout.wav";
+    private static final String SNAKE_MUSICPATH = "src/com/scanlinearcade/assets/music/snake.wav";
 
     private final GameSettings settings = new GameSettings();
     
@@ -34,7 +54,16 @@ public class ArcadeFrame extends JFrame
     private final JPanel cards = new JPanel(cardLayout);
 
     private final Map<String, ArcadeGame> games = new LinkedHashMap<>();
+    
+    private final HighScoresPanel highScoresPanel = new HighScoresPanel(this::showMenu);
+    
+    private final MusicPlayer musicPlayer = new MusicPlayer(settings);
+    private boolean inSettingsHighScore = false;
 
+    /**
+     * Initializes the functionality of the arcade application.
+     * Adds/shows the menus, games, and the components that bolster them to the frame.
+     */
     public ArcadeFrame()
     {
         setTitle("Scanline Arcade");
@@ -44,9 +73,9 @@ public class ArcadeFrame extends JFrame
         registerGames();
 
         MenuPanel menuPanel = new MenuPanel(
-            () -> showGame("snake"),
-            () -> showGame("breakout"),
-            () -> showGame("invaders"),
+            () -> showGame("snake", SNAKE_MUSICPATH),
+            () -> showGame("breakout", BREAKOUT_MUSICPATH),
+            () -> showGame("invaders", INVADERS_MUSICPATH),
             this::showScores,
             this::showSettings
         );
@@ -72,7 +101,7 @@ public class ArcadeFrame extends JFrame
             game.stopGameLoop();
         }
 
-        cards.add(createPlaceholderPanel("High Scores", "Top scores will appear here."), SCORES_CARD);
+        cards.add(highScoresPanel, SCORES_CARD);
         cards.add(settingsPanel, SETTINGS_CARD);
 
         setContentPane(cards);
@@ -81,18 +110,30 @@ public class ArcadeFrame extends JFrame
 
         showMenu();
         
-        String filepath = "src/com/scanlinearcade/assets/music/boogie-pecan-pie-main-version-41135-02-14.wav";
-        PlayMusic(filepath);
+        initialMusicPlay();
+        addMusicListener(menuPanel);
     }
 
+    /**
+     * Registers each of the games by utilizing a {@link LinkedHashMap}.
+     * Includes the function call of each game adapter, which gives each game access to 
+     * shared settings, shared music, and the ability to return to the main menu using callback.
+     */
     private void registerGames()
     {
-        games.put("snake", new SnakeGameAdapter(settings, () -> returnFromGame("snake")));
-        games.put("breakout", new BreakoutGameAdapter(settings, () -> returnFromGame("breakout")));
-        games.put("invaders", new SpaceInvadersGameAdapter(settings, () -> returnFromGame("invaders")));
+        games.put("snake", new SnakeGameAdapter(settings, musicPlayer, () -> returnFromGame("snake")));
+        games.put("breakout", new BreakoutGameAdapter(settings, musicPlayer, () -> returnFromGame("breakout")));
+        games.put("invaders", new SpaceInvadersGameAdapter(settings, musicPlayer, () -> returnFromGame("invaders")));
     }
 
-    private void showGame(String cardName)
+    /**
+     * Shows the selected game from cardName, starts the game loop, and plays
+     * the selected music when game is shown.
+     * 
+     * @param cardName String name that indicates which card or game will be utilized.
+     * @param musicPath String name that indicates the file path for song for its respective cardName.
+     */
+    private void showGame(String cardName, String musicPath)
     {
         ArcadeGame game = games.get(cardName);
 
@@ -105,8 +146,15 @@ public class ArcadeFrame extends JFrame
         cardLayout.show(cards, cardName);
         game.startGameLoop();
         game.getView().requestFocusInWindow();
+        
+        musicPlayer.playMusic(musicPath);
     }
 
+    /**
+     * Returns to main menu from a game and stops the game loop in the background.
+     * 
+     * @param cardName String name that indicates which game will be utilized.
+     */
     private void returnFromGame(String cardName)
     {
         ArcadeGame game = games.get(cardName);
@@ -120,26 +168,50 @@ public class ArcadeFrame extends JFrame
         showMenu();
     }
 
+    /**
+     * Shows the main menu when called.
+     * More specifically, switches to the main menu card in {@link CardLayout}
+     */
     private void showMenu()
     {
         cardLayout.show(cards, MENU_CARD);
         repaint();
     }
 
+    /**
+     * Shows and sets the high score menu when called.
+     * More specifically, switches to the high score card in {@link CardLayout}
+     */
     private void showScores()
     {
+        inSettingsHighScore = true;
+        highScoresPanel.refreshScores();
         cardLayout.show(cards, SCORES_CARD);
     }
 
+    /**
+     * Shows the settings menu when called.
+     * More specifically, switches to the settings card in {@link CardLayout}
+     */
     private void showSettings()
     {
+        inSettingsHighScore = true;
         cardLayout.show(cards, SETTINGS_CARD);
     }
 
+    /**
+     * Creates the base game screen for each game added to the arcade.
+     * Creates title for each game and center placement for display of gameplay.
+     * 
+     * @param title The String game name that will be displayed as a title
+     * @param content Shows/displays the contents of the specified game
+     * @param onReturn Callback that gives the ability to return to main menu
+     * @return Returns JPanel screen for each game to be displayed on.
+     */
     private JPanel createGameScreen(String title, JComponent content, Runnable onReturn)
     {
         JPanel screen = new JPanel(new BorderLayout());
-        screen.setBackground(Color.BLACK);
+        screen.setBackground(Color.black);
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(new Color(15, 15, 25));
@@ -155,7 +227,7 @@ public class ArcadeFrame extends JFrame
         topBar.add(titleLabel, BorderLayout.CENTER);
 
         JPanel centerWrapper = new JPanel(new BorderLayout());
-        centerWrapper.setBackground(Color.BLACK);
+        centerWrapper.setBackground(settings.getDisplayColor());  //settings gameplay selection
         centerWrapper.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         centerWrapper.add(content, BorderLayout.CENTER);
 
@@ -164,46 +236,37 @@ public class ArcadeFrame extends JFrame
 
         return screen;
     }
-
-    private JPanel createPlaceholderPanel(String title, String message)
-    {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(18, 18, 30));
-
-        JLabel label = new JLabel(
-            "<html><div style='text-align:center;'>" +
-            "<h1 style='color:#00FFC8; font-family:monospace;'>" + title + "</h1>" +
-            "<p style='color:white; font-family:monospace;'>" + message + "</p>" +
-            "</div></html>",
-            SwingConstants.CENTER
-        );
-
-        panel.add(label, BorderLayout.CENTER);
-        return panel;
-    }
     
-    public static void PlayMusic(String location)
+    private void initialMusicPlay()
     {
-        try
+        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav"); 
+    }
+
+    /**
+     * Plays music whenever the main menu is displayed.
+     * 
+     * @param menuPanel JPanel object for the main menu.
+     */
+    private void addMusicListener(MenuPanel menuPanel)
+    {
+        
+        menuPanel.addComponentListener(new ComponentAdapter() 
         {
-            File musicPath = new File(location);
-            
-            if(musicPath.exists())
+            @Override
+            public void componentShown(ComponentEvent e) 
             {
-                AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicPath);
-                Clip clip = AudioSystem.getClip();
-                clip.open(audioInput);
-                clip.start();
-                clip.loop(Clip.LOOP_CONTINUOUSLY);
+                if(inSettingsHighScore == true) //so mainmenu.wav doesn't restart after leaving Settings or High Score menus
+                {
+                    inSettingsHighScore = false;
+                }
+                
+                else
+                {
+                    // Code to start music
+                    musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav");
+                }
             }
-            else
-            {
-                System.out.println("Cant find file");
-            }
-        }
-        catch(Exception e)
-        {
-            System.out.println(e);
-        }
+        });
+        
     }
 }

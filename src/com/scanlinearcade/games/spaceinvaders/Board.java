@@ -1,6 +1,7 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 import com.scanlinearcade.app.ArcadeFrame;
+import com.scanlinearcade.app.GameSettings;
 
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
@@ -11,6 +12,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.Window;
@@ -18,16 +20,33 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
 /**
- * handles operations of the game, displays game for user
- * @author RayCa
+ * Space Invaders Gameplay Display Class: Board
+ * 
+ * <p>Intent: Handles operations of the game, displays game for user.
+ * Board utilizes encapsulation and composition, having objects for player,
+ * alien, bombs, and shot. The board handles actions and interactions between 
+ * these components.
+ * 
+ * <p>Key Methods:
+ * <ul>
+ *   <li>{@code private void initBoard()}</li>
+ *   <li>{@code private void gameInit()}</li>
+ *   <li>{@code private void update()}</li>
+ *   <li>{@code public void resetGame()}</li>
+ *   <li>{@code public void startGameLoop()}</li>
+ *   <li>{@code public void stopGameLoop()}</li>
+ * </ul>
  */
 public class Board extends JPanel {
 
@@ -63,6 +82,7 @@ public class Board extends JPanel {
     private boolean inGame = true;
     private String explImg = "src/com/scanlinearcade/games/images/explosion.png";
     private String message = "Game Over!";
+    private Image backgroundImage;
 
     private Timer timer;
     private final Runnable returnToHubAction;
@@ -73,24 +93,26 @@ public class Board extends JPanel {
     private boolean firstEntryInstructionsPending;
     private long suppressPauseUntilMs;
     private String currentRunToken;
+    private GameSettings settings;
 
     /**
      * runs board and sets game components on board
      */
     public Board() {
-        this(null, null);
+        this(null, null, null);
     }
 
     public Board(Runnable returnToHubAction) 
     {
-        this(returnToHubAction, null);
+        this(returnToHubAction, null, null);
     }
 
-    public Board(Runnable returnToHubAction, GameOverHandler gameOverHandler)
+    public Board(Runnable returnToHubAction, GameOverHandler gameOverHandler, GameSettings settings)
     {
 
         this.returnToHubAction = returnToHubAction;
         this.gameOverHandler = gameOverHandler;
+        this.settings = settings;
 
         initBoard();
         
@@ -105,6 +127,7 @@ public class Board extends JPanel {
         setFocusable(true);
         setPreferredSize(new Dimension(Commons.BOARD_WIDTH, TOTAL_HEIGHT));
         setBackground(Color.black);
+        setBackgroundImage();
 
         timer = new Timer(Commons.DELAY, new GameCycle());
        
@@ -113,7 +136,7 @@ public class Board extends JPanel {
 
 
     /**
-     * sets board for player and aliens
+     * Sets board for player and aliens.
      */
     private void gameInit() {
 
@@ -143,7 +166,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays aliens on screen
+     * Displays aliens on screen.
+     * 
      * @param g 
      */
     private void drawAliens(Graphics g) {
@@ -163,7 +187,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays player onscreen
+     * Draws player onto board.
+     * 
      * @param g 
      */
     private void drawPlayer(Graphics g) {
@@ -181,7 +206,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays graphics for shot from player
+     * Displays graphics for shot from player.
+     * 
      * @param g 
      */
     private void drawShot(Graphics g) {
@@ -193,7 +219,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays bomb graphics from enemies/aliens
+     * Displays bomb graphics from enemies/aliens.
+     * 
      * @param g 
      */
     private void drawBombing(Graphics g) {
@@ -208,7 +235,23 @@ public class Board extends JPanel {
             }
         }
     }
+ 
+    /**
+     * Sets the background image for the Space Invaders game.
+     */
+    private void setBackgroundImage() {
+        try {
+            backgroundImage = ImageIO.read(new File("src/com/scanlinearcade/games/images/invadersbacky.png"));
+        } catch (IOException ex) {
+            System.getLogger(Board.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
+    }
 
+    /**
+     * Draws and scales the gameplay for the arcade screen.
+     * 
+     * @param g 
+     */
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -232,7 +275,7 @@ public class Board extends JPanel {
         int offsetX = (panelW - drawW) / 2;
         int offsetY = (panelH - drawH) / 2;
 
-        g2.setColor(Color.BLACK);
+        g2.setColor(settings.getDisplayColor()); //changes color based on display settings
         g2.fillRect(0, 0, panelW, panelH);
 
         g2.translate(offsetX, offsetY);
@@ -244,6 +287,7 @@ public class Board extends JPanel {
     }
 
     /**
+     * Draws the aliens, projectiles, background, and player on the board.
      * 
      * @param g 
      */
@@ -251,19 +295,20 @@ public class Board extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g;
 
-        g2.setColor(Color.black);
-        g2.fillRect(0, 0, Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+        //g2.setColor(Color.black);
+        //g2.fillRect(0, 0, Commons.BOARD_WIDTH, Commons.BOARD_HEIGHT);
+        g2.drawImage(backgroundImage, 0, 0, Commons.BOARD_WIDTH, Commons.BOARD_WIDTH, null);
 
         // visible border around the board
         g2.setColor(BOARD_BORDER);
         g2.drawRect(0, 0, Commons.BOARD_WIDTH - 1, Commons.BOARD_HEIGHT - 1);
 
-        g2.setColor(Color.green);
+        //g2.setColor(new Color(0, 255, 200));
 
         if (inGame) {
 
-            g2.drawLine(0, Commons.GROUND,
-                    Commons.BOARD_WIDTH, Commons.GROUND);
+            //g2.drawLine(0, Commons.GROUND,
+                   // Commons.BOARD_WIDTH, Commons.GROUND);
 
             drawAliens(g2);
             drawPlayer(g2);
@@ -295,7 +340,7 @@ public class Board extends JPanel {
 
 
     /**
-     * updates the board for enemies, player, and shots
+     * Updates the board for enemies, player, and shots.
      */
     private void update() {
 
@@ -437,7 +482,7 @@ public class Board extends JPanel {
 
             if (!bomb.isDestroyed()) {
 
-                bomb.setY(bomb.getY() + 1);
+                bomb.setY(bomb.getY() + (int)settings.getDifficultyScale(1) + 1); //altered this for difficulty settings
 
                 if (bomb.getY() >= Commons.GROUND - Commons.BOMB_HEIGHT) {
 
@@ -447,21 +492,25 @@ public class Board extends JPanel {
         }
     }
 
-    /**
-     * 
-     */
+    
     private void doGameCycle() {
 
         update();
         repaint();
     }
 
+    /**
+     * Restarts the game from a dialog state. Called from pause or game over handlers.
+     */
     private void restartFromDialog() 
     {
         resetGame();
         startGameLoop();
     }
 
+    /**
+     * Returns to the hub/main menu from a dialog state. Called from pause or game over handlers.
+     */
     private void returnToHubFromDialog() {
         if (returnToHubAction != null) {
             returnToHubAction.run();
@@ -485,7 +534,9 @@ public class Board extends JPanel {
     }
 
     /**
+     * Helper class used for input handling.
      * 
+     * <p>Tracks and handles user inputs for pausing, instructions, and player gameplay.
      */
     private class TAdapter extends KeyAdapter {
 
@@ -549,6 +600,11 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * Draws display bar hud that details pausing, instructions, and score for the player.
+     * 
+     * @param g2 graphics object
+     */
     private void drawHud(Graphics2D g2) {
 
         g2.setColor(HUD_BG);
@@ -572,6 +628,11 @@ public class Board extends JPanel {
         g2.drawString(scoreText, scoreX, hudBaseline);
     }
 
+    /**
+     * Draws graphics for instruction overlay, that details how to plays Space Invaders
+     * 
+     * @param g2 graphic object
+     */
     private void drawInstructionsOverlay(Graphics2D g2) {
 
         int boxX = 24;
@@ -608,12 +669,18 @@ public class Board extends JPanel {
         g2.drawString(text, x, y);
     }
     
+    /**
+     * Resets the game for the user.
+     */
     public void resetGame()
     {
         gameInit();
         repaint();
     }
 
+    /**
+     * Starts the game for the user.
+     */
     public void startGameLoop()
     {
         if (!timer.isRunning())
@@ -624,6 +691,9 @@ public class Board extends JPanel {
         requestFocusInWindow();
     }
 
+    /**
+     * Stops the game for the user. Typically used for pausing.
+     */
     public void stopGameLoop()
     {
         if (timer.isRunning())
@@ -632,6 +702,9 @@ public class Board extends JPanel {
         }
     } 
 
+    /**
+     * Displays the instructions overlay card, pausing gameplay.
+     */
     public void showInstructionsCard()
     {
         if (!inGame)
@@ -652,14 +725,25 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * Checks if instructions card is showing or not.
+     * 
+     * @return {@code true} if instructions card is showing, {@code false} otherwise
+     */
     public boolean isShowingInstructionsCard()
     {
         return showingInstructionsCard;
     }
 
+    /**
+     * Checks whether pause toggle should be suppressed (e.g., during instructions or immediately after action).
+     * 
+     * @return {@code true} if pause should be suppressed, {@code false} otherwise
+     */
     public boolean shouldSuppressPauseToggle()
     {
         return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
     }
+    
     
 }

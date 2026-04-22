@@ -9,6 +9,7 @@
 //*****************************************************************************************************
 package com.scanlinearcade.games.breakout;
 
+import com.scanlinearcade.app.GameSettings;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -23,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * <p>Public API Signatures:
  * <ul>
- *   <li>{@code public Ball(int startX, int startY, int radius)}</li>
+ *   <li>{@code public Ball(int startX, int startY, int radius, GameSettings settings)}</li>
  *   <li>{@code public void reset(int startX, int startY)}</li>
  *   <li>{@code public void reset(int startX, int startY, boolean resetSpeed)}</li>
  *   <li>{@code public boolean update(Rectangle bounds, Paddle paddle, Bricks bricks, BreakoutScore score)}</li>
@@ -42,6 +43,12 @@ import java.util.concurrent.ThreadLocalRandom;
  * - Random ball trajectory upon initialization
  */
 public class Ball {
+	private static final Color[] SPAWN_COLORS = {
+		new Color(255, 70, 230),
+		new Color(200, 80, 255),
+		new Color(90, 170, 255)
+	};
+
 	private double x;
 	private double y;
 	private double dx;
@@ -50,20 +57,24 @@ public class Ball {
 	private double speed;
 	private double speedStep;
 	private double maxSpeed;
+        private Color ballColor;
+        private GameSettings settings;
 
 	/**
 	 * Creates a ball and initializes it to the provided starting position.
-	 * Signature: {@code public Ball(int startX, int startY, int radius)}
+	 * Signature: {@code public Ball(int startX, int startY, int radius, GameSettings settings)}
 	 *
 	 * @param startX initial x-coordinate of the ball center
 	 * @param startY initial y-coordinate of the ball center
 	 * @param radius radius of the ball in pixels
+	 * @param settings game settings for difficulty scaling
 	 */
-	public Ball(int startX, int startY, int radius) {
+	public Ball(int startX, int startY, int radius, GameSettings settings) {
+                this.settings = settings;
 		this.radius = radius;
-		this.speed = 6.0;
+		this.speed = 6.0 * settings.getDifficultyScale(2);
 		this.speedStep = 0.2;
-		this.maxSpeed = 12.0;
+		this.maxSpeed = 12.0 * settings.getDifficultyScale(2);
 		reset(startX, startY);
 	}
 
@@ -78,11 +89,20 @@ public class Ball {
 		reset(startX, startY, true);
 	}
 
+	/**
+	 * Resets the ball to the provided position with optional speed reset.
+	 * Signature: {@code public void reset(int startX, int startY, boolean resetSpeed)}
+	 *
+	 * @param startX x-coordinate of the reset position
+	 * @param startY y-coordinate of the reset position
+	 * @param resetSpeed if {@code true}, resets speed to initial value; if {@code false}, preserves current speed
+	 */
 	public void reset(int startX, int startY, boolean resetSpeed) {
 		this.x = startX;
 		this.y = startY;
+		this.ballColor = randomSpawnColor();
 		if (resetSpeed) {
-			this.speed = 6.0;
+			this.speed = 6.0 * settings.getDifficultyScale(2);
 		}
 		setRandomLaunchDirection();
 	}
@@ -141,8 +161,20 @@ public class Ball {
 	 * @param g2 graphics context used for rendering
 	 */
 	public void draw(Graphics2D g2) {
-		g2.setColor(Color.WHITE);
-		g2.fillOval((int) (x - radius), (int) (y - radius), radius * 2, radius * 2);
+		int drawX = (int) (x - radius);
+		int drawY = (int) (y - radius);
+		int size = radius * 2;
+
+		Color base = ballColor == null ? SPAWN_COLORS[0] : ballColor;
+
+		g2.setColor(withAlpha(base, 120));
+		g2.fillOval(drawX - 2, drawY - 2, size + 4, size + 4);
+
+		g2.setColor(base);
+		g2.fillOval(drawX, drawY, size, size);
+
+		g2.setColor(lighten(base, 0.45f));
+		g2.fillOval(drawX + (radius / 2), drawY + (radius / 2), radius, radius);
 	}
 
 	/**
@@ -191,6 +223,10 @@ public class Ball {
 		return dy;
 	}
 
+	/**
+	 * Increases the ball speed for the next level.
+	 * Signature: {@code public void increaseLevelSpeed()}
+	 */
 	public void increaseLevelSpeed() {
 		increaseSpeed();
 	}
@@ -212,6 +248,22 @@ public class Ball {
 			dirX = dirX < 0.0 ? -0.2 : 0.2;
 		}
 		setDirection(dirX, -1.0);
+	}
+
+	private Color randomSpawnColor() {
+		int index = ThreadLocalRandom.current().nextInt(SPAWN_COLORS.length);
+		return SPAWN_COLORS[index];
+	}
+
+	private Color withAlpha(Color color, int alpha) {
+		return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
+	}
+
+	private Color lighten(Color color, float amount) {
+		int r = color.getRed() + Math.round((255 - color.getRed()) * amount);
+		int g = color.getGreen() + Math.round((255 - color.getGreen()) * amount);
+		int b = color.getBlue() + Math.round((255 - color.getBlue()) * amount);
+		return new Color(Math.min(255, r), Math.min(255, g), Math.min(255, b));
 	}
 
 	private void increaseSpeed() {

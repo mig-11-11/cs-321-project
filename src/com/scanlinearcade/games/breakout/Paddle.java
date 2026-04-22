@@ -12,6 +12,7 @@ package com.scanlinearcade.games.breakout;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Domain Model Class: Paddle
@@ -30,11 +31,18 @@ import java.awt.Rectangle;
  * <p>Package-private API Signatures: None in current implementation.
  */
 public class Paddle {
+	private static final Color[] SPAWN_COLORS = {
+		new Color(255, 70, 230),
+		new Color(200, 80, 255),
+		new Color(90, 170, 255)
+	};
+
 	private int x;
 	private int y;
 	private int width;
 	private int height;
 	private int speed;
+	private Color paddleColor;
 
 	/**
 	 * Creates a paddle with the given starting position and dimensions.
@@ -51,6 +59,7 @@ public class Paddle {
 		this.width = width;
 		this.height = height;
 		this.speed = 10;
+		this.paddleColor = randomSpawnColor();
 	}
 
 	/**
@@ -83,8 +92,30 @@ public class Paddle {
 	 * @param g2 graphics context
 	 */
 	public void draw(Graphics2D g2) {
-		g2.setColor(Color.WHITE);
+		g2.setColor(withAlpha(paddleColor, 100));
+		g2.fillRect(x - 2, y - 2, width + 4, height + 4);
+
+		g2.setColor(paddleColor);
 		g2.fillRect(x, y, width, height);
+
+		g2.setColor(lighten(paddleColor, 0.45f));
+		g2.fillRect(x + 4, y + 2, Math.max(8, width / 3), Math.max(2, height / 3));
+	}
+
+	private Color randomSpawnColor() {
+		int index = ThreadLocalRandom.current().nextInt(SPAWN_COLORS.length);
+		return SPAWN_COLORS[index];
+	}
+
+	private Color withAlpha(Color color, int alpha) {
+		return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
+	}
+
+	private Color lighten(Color color, float amount) {
+		int r = color.getRed() + Math.round((255 - color.getRed()) * amount);
+		int g = color.getGreen() + Math.round((255 - color.getGreen()) * amount);
+		int b = color.getBlue() + Math.round((255 - color.getBlue()) * amount);
+		return new Color(Math.min(255, r), Math.min(255, g), Math.min(255, b));
 	}
 
 	/**

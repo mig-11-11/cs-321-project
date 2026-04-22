@@ -1,8 +1,8 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 /**
- * holds the constant values to be used by other classes
- * @author RayCa
+ * <p>Holds the constant values to be used by other classes
+ * All classes should have access to these constants.
  */
 public interface Commons {
 
@@ -15,7 +15,7 @@ public interface Commons {
     int BOMB_HEIGHT = 5;
 
     int ALIEN_HEIGHT = 12;
-    int ALIEN_WIDTH = 12;
+    int ALIEN_WIDTH = 17;
     int ALIEN_INIT_X = 150;
     int ALIEN_INIT_Y = 5;
 
