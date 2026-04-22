@@ -31,8 +31,22 @@ import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
 /**
- * handles operations of the game, displays game for user
- * @author RayCa
+ * Space Invaders Gameplay Display Class: Board
+ * 
+ * <p>Intent: Handles operations of the game, displays game for user.
+ * Board utilizes encapsulation and composition, having objects for player,
+ * alien, bombs, and shot. The board handles actions and interactions between 
+ * these components.
+ * 
+ * <p>Key Methods:
+ * <ul>
+ *   <li>{@code private void initBoard()}</li>
+ *   <li>{@code private void gameInit()}</li>
+ *   <li>{@code private void update()}</li>
+ *   <li>{@code public void resetGame()}</li>
+ *   <li>{@code public void startGameLoop()}</li>
+ *   <li>{@code public void stopGameLoop()}</li>
+ * </ul>
  */
 public class Board extends JPanel {
 
@@ -122,7 +136,7 @@ public class Board extends JPanel {
 
 
     /**
-     * sets board for player and aliens
+     * Sets board for player and aliens.
      */
     private void gameInit() {
 
@@ -152,7 +166,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays aliens on screen
+     * Displays aliens on screen.
+     * 
      * @param g 
      */
     private void drawAliens(Graphics g) {
@@ -172,7 +187,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays player onscreen
+     * Draws player onto board.
+     * 
      * @param g 
      */
     private void drawPlayer(Graphics g) {
@@ -190,7 +206,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays graphics for shot from player
+     * Displays graphics for shot from player.
+     * 
      * @param g 
      */
     private void drawShot(Graphics g) {
@@ -202,7 +219,8 @@ public class Board extends JPanel {
     }
 
     /**
-     * displays bomb graphics from enemies/aliens
+     * Displays bomb graphics from enemies/aliens.
+     * 
      * @param g 
      */
     private void drawBombing(Graphics g) {
@@ -218,6 +236,9 @@ public class Board extends JPanel {
         }
     }
  
+    /**
+     * Sets the background image for the Space Invaders game.
+     */
     private void setBackgroundImage() {
         try {
             backgroundImage = ImageIO.read(new File("src/com/scanlinearcade/games/images/invadersbacky.png"));
@@ -226,6 +247,11 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * Draws and scales the gameplay for the arcade screen.
+     * 
+     * @param g 
+     */
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -261,6 +287,7 @@ public class Board extends JPanel {
     }
 
     /**
+     * Draws the aliens, projectiles, background, and player on the board.
      * 
      * @param g 
      */
@@ -313,7 +340,7 @@ public class Board extends JPanel {
 
 
     /**
-     * updates the board for enemies, player, and shots
+     * Updates the board for enemies, player, and shots.
      */
     private void update() {
 
@@ -465,21 +492,25 @@ public class Board extends JPanel {
         }
     }
 
-    /**
-     * 
-     */
+    
     private void doGameCycle() {
 
         update();
         repaint();
     }
 
+    /**
+     * Restarts the game from a dialog state. Called from pause or game over handlers.
+     */
     private void restartFromDialog() 
     {
         resetGame();
         startGameLoop();
     }
 
+    /**
+     * Returns to the hub/main menu from a dialog state. Called from pause or game over handlers.
+     */
     private void returnToHubFromDialog() {
         if (returnToHubAction != null) {
             returnToHubAction.run();
@@ -502,7 +533,11 @@ public class Board extends JPanel {
         }
     }
 
-    
+    /**
+     * Helper class used for input handling.
+     * 
+     * <p>Tracks and handles user inputs for pausing, instructions, and player gameplay.
+     */
     private class TAdapter extends KeyAdapter {
 
         
@@ -565,6 +600,11 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * Draws display bar hud that details pausing, instructions, and score for the player.
+     * 
+     * @param g2 graphics object
+     */
     private void drawHud(Graphics2D g2) {
 
         g2.setColor(HUD_BG);
@@ -588,6 +628,11 @@ public class Board extends JPanel {
         g2.drawString(scoreText, scoreX, hudBaseline);
     }
 
+    /**
+     * Draws graphics for instruction overlay, that details how to plays Space Invaders
+     * 
+     * @param g2 graphic object
+     */
     private void drawInstructionsOverlay(Graphics2D g2) {
 
         int boxX = 24;
@@ -624,12 +669,18 @@ public class Board extends JPanel {
         g2.drawString(text, x, y);
     }
     
+    /**
+     * Resets the game for the user.
+     */
     public void resetGame()
     {
         gameInit();
         repaint();
     }
 
+    /**
+     * Starts the game for the user.
+     */
     public void startGameLoop()
     {
         if (!timer.isRunning())
@@ -640,6 +691,9 @@ public class Board extends JPanel {
         requestFocusInWindow();
     }
 
+    /**
+     * Stops the game for the user. Typically used for pausing.
+     */
     public void stopGameLoop()
     {
         if (timer.isRunning())
@@ -648,6 +702,9 @@ public class Board extends JPanel {
         }
     } 
 
+    /**
+     * Displays the instructions overlay card, pausing gameplay.
+     */
     public void showInstructionsCard()
     {
         if (!inGame)
@@ -668,19 +725,25 @@ public class Board extends JPanel {
         }
     }
 
+    /**
+     * Checks if instructions card is showing or not.
+     * 
+     * @return {@code true} if instructions card is showing, {@code false} otherwise
+     */
     public boolean isShowingInstructionsCard()
     {
         return showingInstructionsCard;
     }
 
+    /**
+     * Checks whether pause toggle should be suppressed (e.g., during instructions or immediately after action).
+     * 
+     * @return {@code true} if pause should be suppressed, {@code false} otherwise
+     */
     public boolean shouldSuppressPauseToggle()
     {
         return showingInstructionsCard || System.currentTimeMillis() < suppressPauseUntilMs;
     }
     
-    public void setDifficultyScale(GameSettings settings)
-    {
-        this.settings = settings;
-    }
     
 }

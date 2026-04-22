@@ -3,8 +3,8 @@ package com.scanlinearcade.games.spaceinvaders;
 import java.awt.Image;
 
 /**
- * 
- * @author RayCa
+ * Class used for inheritance. The player, alien, and shot classes
+ * inherit and share functionality with this class.
  */
 public class Sprite {
 

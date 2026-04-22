@@ -1,8 +1,8 @@
 package com.scanlinearcade.games.spaceinvaders;
 
 /**
- * holds the constant values to be used by other classes
- * @author RayCa
+ * <p>Holds the constant values to be used by other classes
+ * All classes should have access to these constants.
  */
 public interface Commons {
 
