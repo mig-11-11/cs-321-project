@@ -374,7 +374,7 @@ public class Board extends JPanel {
                             && shotY >= (alienY)
                             && shotY <= (alienY + Commons.ALIEN_HEIGHT)) {
 
-                        var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/invadersbacky.png"));
+                        var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/explosion.png"));
                         alien.setImage(ii.getImage());
                         alien.setDying(true);
                         deaths++;
@@ -472,7 +472,7 @@ public class Board extends JPanel {
                         && bombY >= (playerY)
                         && bombY <= (playerY + Commons.PLAYER_HEIGHT)) {
 
-                    var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/invadersbacky.png"));
+                    var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/explosion.png"));
                     player.setImage(ii.getImage());
                     player.setDying(true);
                     bomb.setDestroyed(true);
