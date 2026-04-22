@@ -19,7 +19,25 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
-
+/**
+ * Main Application Frame: ArcadeFrame
+ * 
+ * <p>Intent: Serves as the primary window and controller for the Scanline Arcade
+ * application. Manages navigation between the main menu, individual games,
+ * high scores, and settings using a {@link CardLayout}. Coordinates game lifecycle
+ * events and handles global services such as music playback and configuration.
+ * 
+ * <p>Key Methods:
+ * <ul>
+ *   <li>{@code private void registerGames()}</li>
+ *   <li>{@code private void showGame(String cardName, String musicPath)}</li>
+ *   <li>{@code private void returnFromGame(String cardName)}</li>
+ *   <li>{@code private void showMenu()}</li>
+ *   <li>{@code private void showScores()}</li>
+ *   <li>{@code private void showSettings()}</li>
+ *   <li>{@code private JPanel createGameScreen(String title, JComponent content, Runnable onReturn)}</li>
+ * </ul>
+ */
 public class ArcadeFrame extends JFrame
 {
     private static final String MENU_CARD = "menu";
@@ -42,6 +60,10 @@ public class ArcadeFrame extends JFrame
     private final MusicPlayer musicPlayer = new MusicPlayer(settings);
     private boolean inSettingsHighScore = false;
 
+    /**
+     * Initializes the functionality of the arcade application.
+     * Adds/shows the menus, games, and the components that bolster them to the frame.
+     */
     public ArcadeFrame()
     {
         setTitle("Scanline Arcade");
@@ -92,6 +114,11 @@ public class ArcadeFrame extends JFrame
         addMusicListener(menuPanel);
     }
 
+    /**
+     * Registers each of the games by utilizing a {@link LinkedHashMap}.
+     * Includes the function call of each game adapter, which gives each game access to 
+     * shared settings, shared music, and the ability to return to the main menu using callback.
+     */
     private void registerGames()
     {
         games.put("snake", new SnakeGameAdapter(settings, musicPlayer, () -> returnFromGame("snake")));
@@ -99,6 +126,13 @@ public class ArcadeFrame extends JFrame
         games.put("invaders", new SpaceInvadersGameAdapter(settings, musicPlayer, () -> returnFromGame("invaders")));
     }
 
+    /**
+     * Shows the selected game from cardName, starts the game loop, and plays
+     * the selected music when game is shown.
+     * 
+     * @param cardName String name that indicates which card or game will be utilized.
+     * @param musicPath String name that indicates the file path for song for its respective cardName.
+     */
     private void showGame(String cardName, String musicPath)
     {
         ArcadeGame game = games.get(cardName);
@@ -116,6 +150,11 @@ public class ArcadeFrame extends JFrame
         musicPlayer.playMusic(musicPath);
     }
 
+    /**
+     * Returns to main menu from a game and stops the game loop in the background.
+     * 
+     * @param cardName String name that indicates which game will be utilized.
+     */
     private void returnFromGame(String cardName)
     {
         ArcadeGame game = games.get(cardName);
@@ -129,12 +168,20 @@ public class ArcadeFrame extends JFrame
         showMenu();
     }
 
+    /**
+     * Shows the main menu when called.
+     * More specifically, switches to the main menu card in {@link CardLayout}
+     */
     private void showMenu()
     {
         cardLayout.show(cards, MENU_CARD);
         repaint();
     }
 
+    /**
+     * Shows and sets the high score menu when called.
+     * More specifically, switches to the high score card in {@link CardLayout}
+     */
     private void showScores()
     {
         inSettingsHighScore = true;
@@ -142,12 +189,25 @@ public class ArcadeFrame extends JFrame
         cardLayout.show(cards, SCORES_CARD);
     }
 
+    /**
+     * Shows the settings menu when called.
+     * More specifically, switches to the settings card in {@link CardLayout}
+     */
     private void showSettings()
     {
         inSettingsHighScore = true;
         cardLayout.show(cards, SETTINGS_CARD);
     }
 
+    /**
+     * Creates the base game screen for each game added to the arcade.
+     * Creates title for each game and center placement for display of gameplay.
+     * 
+     * @param title The String game name that will be displayed as a title
+     * @param content Shows/displays the contents of the specified game
+     * @param onReturn Callback that gives the ability to return to main menu
+     * @return Returns JPanel screen for each game to be displayed on.
+     */
     private JPanel createGameScreen(String title, JComponent content, Runnable onReturn)
     {
         JPanel screen = new JPanel(new BorderLayout());
@@ -182,6 +242,11 @@ public class ArcadeFrame extends JFrame
         musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav"); 
     }
 
+    /**
+     * Plays music whenever the main menu is displayed.
+     * 
+     * @param menuPanel JPanel object for the main menu.
+     */
     private void addMusicListener(MenuPanel menuPanel)
     {
         

@@ -7,6 +7,12 @@ import javax.swing.SwingUtilities;
 
 public class Main 
 {
+    /**
+     * <p>Intent: Runs the Scanline Arcade application, allowing the user to
+     * navigate and play multiple games through a shared UI framework.
+     * 
+     * @param args 
+     */
     public static void main(String[] args) 
     {
         SwingUtilities.invokeLater(() -> new ArcadeFrame().setVisible(true));

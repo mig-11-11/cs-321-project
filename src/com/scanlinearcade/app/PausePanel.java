@@ -8,11 +8,24 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- *
- * @author RayCa
+ * UI Overlay Component: PausePanel
+ * 
+ * <p>Intent: Provides a reusable pause menu overlay for arcade games.
+ * Displays options to resume gameplay, restart the current game, view instructions,
+ * or return to the main menu. Designed to appear as a semi-transparent overlay
+ * on top of the active game view.
+ * 
  */
 public class PausePanel extends JPanel
 {
+    /**
+     * Constructs a PausePanel with callback actions for each menu option
+     * 
+     * @param onResume Action executed when the resume button is pressed.
+     * @param onRestart Action executed when the restart button is pressed.
+     * @param onInstructions Action executed when the instructions button is pressed.
+     * @param onMainMenu Action executed when the main menu button is pressed.
+     */
     public PausePanel(Runnable onResume, Runnable onRestart, Runnable onInstructions, Runnable onMainMenu)
     {
         setLayout(new GridBagLayout());

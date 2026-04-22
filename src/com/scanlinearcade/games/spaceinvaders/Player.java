@@ -1,24 +1,29 @@
 package com.scanlinearcade.games.spaceinvaders;
 
-//import com.zetcode.Commons;
-
 import javax.swing.ImageIcon;
 import java.awt.event.KeyEvent;
 
+/**
+ * User Control Class: Player
+ * 
+ * <p>Intent: The Player class encapsulates the position, movement, visibility, and
+ * image data for the player. The board will use a player object, which the user
+ * will control. The user interacts with the game through the player object, and
+ * the Player class is responsible for handling the key inputs from the user.
+ * 
+ */
 public class Player extends Sprite {
 
     private int width;
 
-    /**
-     * runs initPlayer()
-     */
+    
     public Player() {
 
         initPlayer();
     }
 
     /**
-     * sets coordinates and image for player
+     * Sets the player fields and coordinates by overriding Sprite fields.
      */
     private void initPlayer() {
 
@@ -36,7 +41,7 @@ public class Player extends Sprite {
     }
 
     /**
-     * moves player
+     * Moves the player object on the board.
      */
     public void act() {
 
@@ -54,8 +59,9 @@ public class Player extends Sprite {
     }
 
     /**
-     * tracks inputs from user
-     * @param e 
+     * On the board, moves player's ship to the left when user clicks left arrow
+     * and moves ship to right when user clicks right arrow.
+     * @param e detected key being pressed
      */
     public void keyPressed(KeyEvent e) {
 
@@ -73,8 +79,8 @@ public class Player extends Sprite {
     }
 
     /**
-     * tracks inputs from user
-     * @param e 
+     * On the board, stops the player's ship when selected keys are released.
+     * @param e detected key being released
      */
     public void keyReleased(KeyEvent e) {
 
