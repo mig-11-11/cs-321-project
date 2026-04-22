@@ -44,9 +44,9 @@ public class ArcadeFrame extends JFrame
     private static final String SCORES_CARD = "scores";
     private static final String SETTINGS_CARD = "settings";
     
-    private static final String INVADERS_MUSICPATH = "src/com/scanlinearcade/assets/music/spaceinvaders.wav";
-    private static final String BREAKOUT_MUSICPATH = "src/com/scanlinearcade/assets/music/breakout.wav";
-    private static final String SNAKE_MUSICPATH = "src/com/scanlinearcade/assets/music/snake.wav";
+    private static final String INVADERS_MUSICPATH = "/com/scanlinearcade/assets/music/spaceinvaders.wav";
+    private static final String BREAKOUT_MUSICPATH = "/com/scanlinearcade/assets/music/breakout.wav";
+    private static final String SNAKE_MUSICPATH = "/com/scanlinearcade/assets/music/snake.wav";
 
     private final GameSettings settings = new GameSettings();
     
@@ -239,7 +239,7 @@ public class ArcadeFrame extends JFrame
     
     private void initialMusicPlay()
     {
-        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav"); 
+        musicPlayer.playMusic("/com/scanlinearcade/assets/music/mainmenu.wav"); 
     }
 
     /**
@@ -263,7 +263,7 @@ public class ArcadeFrame extends JFrame
                 else
                 {
                     // Code to start music
-                    musicPlayer.playMusic("src/com/scanlinearcade/assets/music/mainmenu.wav");
+                    musicPlayer.playMusic("/com/scanlinearcade/assets/music/mainmenu.wav");
                 }
             }
         });
