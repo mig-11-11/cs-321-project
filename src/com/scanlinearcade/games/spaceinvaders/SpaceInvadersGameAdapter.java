@@ -163,7 +163,7 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
-        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/spaceinvaders.wav"); 
+        musicPlayer.playMusic("/com/scanlinearcade/assets/music/spaceinvaders.wav"); 
     }
 
     /**

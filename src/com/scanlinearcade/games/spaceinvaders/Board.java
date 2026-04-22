@@ -80,7 +80,6 @@ public class Board extends JPanel {
     private int deaths = 0;
 
     private boolean inGame = true;
-    private String explImg = "src/com/scanlinearcade/games/images/explosion.png";
     private String message = "Game Over!";
     private Image backgroundImage;
 
@@ -241,7 +240,7 @@ public class Board extends JPanel {
      */
     private void setBackgroundImage() {
         try {
-            backgroundImage = ImageIO.read(new File("src/com/scanlinearcade/games/images/invadersbacky.png"));
+            backgroundImage = ImageIO.read(getClass().getResource("/com/scanlinearcade/games/images/invadersbacky.png"));
         } catch (IOException ex) {
             System.getLogger(Board.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
@@ -375,7 +374,7 @@ public class Board extends JPanel {
                             && shotY >= (alienY)
                             && shotY <= (alienY + Commons.ALIEN_HEIGHT)) {
 
-                        var ii = new ImageIcon(explImg);
+                        var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/explosion.png"));
                         alien.setImage(ii.getImage());
                         alien.setDying(true);
                         deaths++;
@@ -473,7 +472,7 @@ public class Board extends JPanel {
                         && bombY >= (playerY)
                         && bombY <= (playerY + Commons.PLAYER_HEIGHT)) {
 
-                    var ii = new ImageIcon(explImg);
+                    var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/explosion.png"));
                     player.setImage(ii.getImage());
                     player.setDying(true);
                     bomb.setDestroyed(true);

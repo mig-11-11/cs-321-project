@@ -29,8 +29,7 @@ public class Shot extends Sprite {
      */
     private void initShot(int x, int y) {
 
-        var shotImg = "src/com/scanlinearcade/games/images/shot.png";
-        var ii = new ImageIcon(shotImg);
+        var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/shot.png"));
         setImage(ii.getImage());
 
         int H_SPACE = 6;

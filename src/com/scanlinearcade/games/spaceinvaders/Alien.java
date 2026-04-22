@@ -32,8 +32,7 @@ public class Alien extends Sprite {
 
         bomb = new Bomb(x, y);
 
-        var alienImg = "src/com/scanlinearcade/games/images/AlienSpaceship.png";
-        var ii = new ImageIcon(alienImg);
+        var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/AlienSpaceship.png"));
 
         setImage(ii.getImage());
     }
@@ -81,8 +80,7 @@ public class Alien extends Sprite {
             this.x = x;
             this.y = y;
 
-            var bombImg = "src/com/scanlinearcade/games/images/bomb.png";
-            var ii = new ImageIcon(bombImg);
+            var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/bomb.png"));
             setImage(ii.getImage());
         }
 
