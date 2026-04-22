@@ -15,6 +15,13 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import java.awt.event.HierarchyEvent;
 
+/**
+ * Adapter Class: SpaceInvadersGameAdapter
+ *
+ * <p>Intent: Adapts the {@code Board} game implementation to the {@code ArcadeGame} interface,
+ * integrating pause/resume, game over handling, and layered UI components (pause panel, game over panel).
+ * Manages the overall game flow including music playback callbacks.
+ */
 public class SpaceInvadersGameAdapter implements ArcadeGame
 {
     private final Board panel;
@@ -25,6 +32,13 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
     private final GameSettings settings;
     private final MusicPlayer musicPlayer;
     
+    /**
+     * Creates a fully integrated Space Invaders game with UI layering and music support.
+     *
+     * @param settings game settings for difficulty and display options
+     * @param musicPlayer music player for sound effects and background music
+     * @param onExitToMenu callback to execute when returning to the main menu
+     */
     public SpaceInvadersGameAdapter(GameSettings settings, MusicPlayer musicPlayer, Runnable onExitToMenu)
     {
         this.settings = settings;
@@ -80,6 +94,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         addMusicListener();
     }
 
+    /**
+     * Resumes the gameplay from pause menu. Hides the pause menu and continues the gameplay.
+     */
     private void resumeFromPause()
     {
         pausePanel.setVisible(false);
@@ -87,6 +104,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.requestFocusInWindow();
     }
 
+    /**
+     * Restarts the gameplay from pause menu. Hides the pause menu and restarts the gameplay.
+     */
     private void restartFromPause()
     {
         panel.resetGame();
@@ -95,6 +115,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.requestFocusInWindow();
     }
 
+    /**
+     * Returns back to main menu from pause.
+     */
     private void returnToMenuFromPause()
     {
         pausePanel.setVisible(false);
@@ -107,6 +130,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         }
     }
 
+    /**
+     * Hides pause menu and displays instructions screen.
+     */
     private void showInstructionsFromPause()
     {
         pausePanel.setVisible(false);
@@ -114,12 +140,22 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.requestFocusInWindow();
     }
 
+    /**
+     * Displays the game over panel with the result and score.
+     * 
+     * @param resultText message to display (e.g., "You Win!" or "Game Over!")
+     * @param score final score achieved
+     * @param runToken unique identifier for this game session
+     */
     private void showGameOver(String resultText, int score, String runToken)
     {
         pausePanel.setVisible(false);
         gameOverPanel.showResult(resultText, score, runToken);
     }
 
+    /**
+     * Restarts the game from the game over screen.
+     */
     private void restartFromGameOver()
     {
         gameOverPanel.setVisible(false);
@@ -130,6 +166,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         musicPlayer.playMusic("src/com/scanlinearcade/assets/music/spaceinvaders.wav"); 
     }
 
+    /**
+     * Returns to the main menu from the game over screen.
+     */
     private void returnToMenuFromGameOver()
     {
         gameOverPanel.setVisible(false);
@@ -142,6 +181,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         }
     }
 
+    /** 
+     * Configures the pause key (Escape) to toggle pause menu.
+     */
     private void setupPauseKey()
     {
         AbstractAction pauseAction = new AbstractAction()
@@ -183,6 +225,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.getActionMap().put("pause", pauseAction);
     }
     
+    /**
+     * Adds a listener to play music whenever the game over panel is displayed
+     */
     private void addMusicListener()
     {
         
@@ -196,24 +241,42 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         });
     }
     
+    /**
+     * Returns the unique card name for this game in the arcade.
+    
+     * @return card identifier "invaders"
+     */
     @Override
     public String getCardName()
     {
         return "invaders";
     }
 
+    /**
+     * Returns the display title for this game.
+     
+     * @return display title "Space Invaders"
+     */
     @Override
     public String getDisplayTitle()
     {
         return "Space Invaders";
     }
 
+    /**
+     * Returns the root UI component for rendering the game.
+     * 
+     * @return the layered pane containing game panel and overlay panels
+     */
     @Override
     public JComponent getView()
     {
         return layeredPane;
     }
 
+    /**
+     * Resets the game state and hides all overlay panels.
+     */
     @Override
     public void resetGame()
     {
@@ -222,6 +285,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         pausePanel.setVisible(false);
     }
 
+    /**
+     * Starts the game loop and displays first-entry instructions if applicable.
+     */
     @Override
     public void startGameLoop()
     {
@@ -233,6 +299,9 @@ public class SpaceInvadersGameAdapter implements ArcadeGame
         panel.requestFocusInWindow();
     }
 
+    /**
+     * Stops the game loop.
+     */
     @Override
     public void stopGameLoop()
     {
