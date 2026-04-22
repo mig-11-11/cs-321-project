@@ -155,7 +155,7 @@ public class BreakoutGameAdapter implements ArcadeGame
             @Override
             public void componentShown(ComponentEvent e) {
                 // Code to start music
-                musicPlayer.playMusic("src/com/scanlinearcade/assets/music/gameover.wav"); 
+                musicPlayer.playMusic("/com/scanlinearcade/assets/music/gameover.wav"); 
             }
         });
     }
@@ -234,7 +234,7 @@ public class BreakoutGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
-        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/breakout.wav"); 
+        musicPlayer.playMusic("/com/scanlinearcade/assets/music/breakout.wav"); 
     }
 
     /**

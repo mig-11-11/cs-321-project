@@ -9,7 +9,9 @@
 //*****************************************************************************************************
 package com.scanlinearcade.app;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.InputStream;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -73,8 +75,14 @@ public class MusicPlayer
                 clip.setFramePosition(0);
             }
             
-            File musicPath = new File(musicLocation);
-            AudioInputStream audioInput = AudioSystem.getAudioInputStream(musicPath);
+            InputStream audioSrc = getClass().getResourceAsStream(musicLocation);
+
+            if (audioSrc == null) {
+                throw new IllegalArgumentException("Music file not found: " + musicLocation);
+            }
+
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(new BufferedInputStream(audioSrc));
+            
             clip = AudioSystem.getClip();
             clip.open(audioInput);
             setVolume(currentVolume);

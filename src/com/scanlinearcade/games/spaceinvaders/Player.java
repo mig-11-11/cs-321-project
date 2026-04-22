@@ -27,8 +27,7 @@ public class Player extends Sprite {
      */
     private void initPlayer() {
 
-        var playerImg = "src/com/scanlinearcade/games/images/player.png";
-        var ii = new ImageIcon(playerImg);
+        var ii = new ImageIcon(getClass().getResource("/com/scanlinearcade/games/images/player.png"));
 
         width = ii.getImage().getWidth(null);
         setImage(ii.getImage());
