@@ -234,7 +234,7 @@ public class BreakoutGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
-        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/breakout.wav"); 
+        musicPlayer.playMusic("/com/scanlinearcade/assets/music/breakout.wav"); 
     }
 
     /**

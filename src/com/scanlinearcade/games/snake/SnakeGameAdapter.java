@@ -136,7 +136,7 @@ public class SnakeGameAdapter implements ArcadeGame
         panel.showFirstEntryInstructionsIfPending();
         panel.startGameLoop();
         panel.requestFocusInWindow();
-        musicPlayer.playMusic("src/com/scanlinearcade/assets/music/snake.wav");
+        musicPlayer.playMusic("/com/scanlinearcade/assets/music/snake.wav");
     }
 
     private void returnToMenuFromGameOver()
